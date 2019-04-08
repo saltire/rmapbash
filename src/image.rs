@@ -3,25 +3,17 @@ use std::io::BufWriter;
 
 use png::HasParameters;
 
-pub fn draw_tiny_map(coords: Vec<(i32, i32)>, file: File) -> Result<(), png::EncodingError> {
-    let min_x = coords.iter().map(|(x, _)| x).min().unwrap();
-    let max_x = coords.iter().map(|(x, _)| x).max().unwrap();
-    let min_z = coords.iter().map(|(_, z)| z).min().unwrap();
-    let max_z = coords.iter().map(|(_, z)| z).max().unwrap();
-
-    let width = (max_x - min_x + 1) as u32;
-    let height = (max_z - min_z + 1) as u32;
+pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
+-> Result<(), png::EncodingError> {
     let size = (width * height * 4) as usize;
-
-    println!("Map size {}x{} with {} blocks ({} bytes)", width, height, coords.len(), size);
+    println!("Map size {}x{} ({} bytes)", width, height, size);
 
     let mut data: Vec<u8> = vec![0; size];
-    for (x, z) in coords.iter() {
-        let p = (z - min_z) as u32 * width * 4 + (x - min_x) as u32 * 4;
+    pixels.iter().enumerate().filter(|(_, v)| **v).for_each(|(i, _)| {
         for c in 0..4 {
-            data[(p + c) as usize] = 255;
+            data[(i * 4 + c) as usize] = 255;
         }
-    }
+    });
 
     let ref mut w = BufWriter::new(file);
 

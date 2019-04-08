@@ -41,10 +41,22 @@ mod image;
 fn draw_region_map(worldpath: &Path) -> Result<(), Box<std::error::Error>> {
     let regions = data::read_regions(worldpath)?;
 
+    let min_x = regions.iter().map(|(x, _)| x).min().unwrap();
+    let max_x = regions.iter().map(|(x, _)| x).max().unwrap();
+    let min_z = regions.iter().map(|(_, z)| z).min().unwrap();
+    let max_z = regions.iter().map(|(_, z)| z).max().unwrap();
+    let width = max_x - min_x + 1;
+    let height = max_z - min_z + 1;
+
+    let mut pixels: Vec<bool> = vec![false; (width * height) as usize];
+    for (x, z) in regions.iter() {
+        pixels[((z - min_z) * width + (x - min_x)) as usize] = true;
+    }
+
     let outpath = Path::new("./map.png");
     let file = File::create(outpath)?;
 
-    image::draw_tiny_map(regions, file)?;
+    image::draw_tiny_map(pixels.as_slice(), width as u32, height as u32, file)?;
 
     Ok(())
 }
