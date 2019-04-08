@@ -7,5 +7,6 @@ edition = "2018"
 [dependencies]
 hematite-nbt = "0.4"
 flate2 = "1.0"
+png = "0.14"
 regex = "1.1"
 serde_json = "1.0"

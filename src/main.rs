@@ -1,21 +1,19 @@
 // extern crate flate2;
 // extern crate nbt;
-extern crate regex;
 // extern crate serde_json;
 
 use std::env;
-use std::fs;
-use std::io::{Error, ErrorKind};
+use std::fs::File;
 use std::path::Path;
 use std::process::exit;
-use std::result::Result;
 
 // use flate2::read::GzDecoder;
 
 // use nbt::Result;
 // use nbt::Blob;
 
-use regex::Regex;
+mod data;
+mod image;
 
 // fn read_file() -> Result<()> {
 //     let args: Vec<String> = env::args().collect();
@@ -40,30 +38,15 @@ use regex::Regex;
 //     }
 // }
 
-fn read_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
-    if !path.is_dir() {
-        return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
-    }
+fn draw_region_map(worldpath: &Path) -> Result<(), Box<std::error::Error>> {
+    let regions = data::read_regions(worldpath)?;
 
-    let region_path = path.join("region");
-    if !region_path.is_dir() {
-        return Err(Error::new(ErrorKind::NotFound, "No region subdirectory found in path."));
-    }
+    let outpath = Path::new("./map.png");
+    let file = File::create(outpath)?;
 
-    let mut regions = Vec::new();
-    let re = Regex::new(r"^r\.([-\d]+)\.([-\d]+)\.mca$").unwrap();
+    image::draw_tiny_map(regions, file)?;
 
-    for entry in fs::read_dir(region_path)? {
-        if let Some(filename) = entry?.file_name().to_str() {
-            if let Some(caps) = re.captures(filename) {
-                let rx = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-                let rz = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
-                regions.push((rx, rz));
-            }
-        }
-    }
-
-    Ok(regions)
+    Ok(())
 }
 
 fn main() {
@@ -71,19 +54,12 @@ fn main() {
 
     if let Some(arg) = args.into_iter().skip(1).take(1).next() {
         let path = Path::new(&arg);
-        if let Some(path_str) = path.to_str() {
-            println!("Path: {}", path_str);
-
-            match read_regions(path) {
-                Ok(regions) => println!("{:?}", regions),
-                Err(err) => {
-                    eprintln!("error: {}", err);
-                    exit(1)
-                }
+        match draw_region_map(path) {
+            Ok(()) => println!("Done."),
+            Err(err) => {
+                eprintln!("error: {}", err);
+                exit(1)
             }
-        } else {
-            eprintln!("error: Path does not convert to string.");
-            exit(1)
         }
     } else {
         eprintln!("error: A path argument is required.");
