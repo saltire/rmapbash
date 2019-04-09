@@ -1,13 +1,15 @@
-extern crate regex;
-
 use std::fs;
 use std::io::{prelude::*, Error, ErrorKind};
 use std::path::Path;
 use std::result::Result;
 
+use flate2::read::GzDecoder;
+
+use nbt::Blob;
+
 use regex::Regex;
 
-pub fn read_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
+pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
     if !path.is_dir() {
         return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
     }
@@ -48,4 +50,28 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     }
 
     Ok(chunks)
+}
+
+#[allow(dead_code)]
+fn read_dat_file(path: &Path) -> Result<(), Error> {
+    let file = fs::File::open(path)?;
+    let mut level_reader = GzDecoder::new(file);
+
+    println!("================================= NBT Contents =================================");
+    let blob = match Blob::from_reader(&mut level_reader) {
+        Ok(blob) => blob,
+        Err(err) => return Err(Error::new(ErrorKind::InvalidData,
+            format!("Error reading NBT: {}", err))),
+    };
+    println!("{}", blob);
+
+    println!("============================== JSON Representation =============================");
+    let json = match serde_json::to_string_pretty(&blob) {
+        Ok(json) => json,
+        Err(err) => return Err(Error::new(ErrorKind::InvalidData,
+            format!("Error formatting NBT as JSON: {}", err))),
+    };
+    println!("{}", json);
+
+    Ok(())
 }
