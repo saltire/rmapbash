@@ -1,13 +1,26 @@
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{prelude::*, Error, ErrorKind};
+use std::io::{prelude::*, Error, ErrorKind, SeekFrom};
 use std::path::Path;
 use std::result::Result;
 
+use bitreader::BitReader;
+
 use flate2::read::GzDecoder;
+use flate2::read::ZlibDecoder;
 
 use nbt::Blob;
 
 use regex::Regex;
+
+fn read_u32(f: &mut File) -> Result<u32, Error> {
+    let mut buf = [0; 4];
+    f.read(&mut buf)?;
+    Ok(((buf[0] as u32) << 24) |
+        ((buf[1] as u32) << 16) |
+        ((buf[2] as u32) << 8) |
+        buf[3] as u32)
+}
 
 pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
     if !path.is_dir() {
@@ -37,13 +50,10 @@ pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     let mut f = File::open(path)?;
-    let mut buf = [0; 4];
     let mut chunks = [false; 1024];
 
     for p in 0..1024 {
-        f.read(&mut buf)?;
-        let val = ((buf[0] as u32) << 24) | ((buf[1] as u32) << 16) |
-            ((buf[2] as u32) << 8) | buf[3] as u32;
+        let val = read_u32(&mut f)?;
         if val > 0 {
             chunks[p] = true;
         }
@@ -52,12 +62,56 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     Ok(chunks)
 }
 
+pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u16; 256]>, Error> {
+    let mut f = File::open(path)?;
+    let mut heightmaps = HashMap::new();
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            let co = (cz * 32 + cx) * 4;
+            f.seek(SeekFrom::Start(co))?;
+
+            let offset = (read_u32(&mut f)? >> 8) * 4096;
+            if offset > 0 {
+                f.seek(SeekFrom::Start(offset as u64))?;
+                let size = read_u32(&mut f)? as usize;
+                let data = vec![0u8; size - 1];
+                f.seek(SeekFrom::Current(1))?;
+
+                let mut reader = ZlibDecoder::new_with_buf(&mut f, data);
+                let blob = Blob::from_reader(&mut reader)?;
+                let value: serde_json::Value = serde_json::to_value(&blob)?;
+                let longs = &value["Level"]["Heightmaps"]["WORLD_SURFACE"];
+
+                let mut bytes = [0u8; 288];
+                for i in 0..36 {
+                    if let Some(long) = longs[35 - i].as_i64() {
+                        for b in 0..8 {
+                            bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
+                        }
+                    }
+                }
+
+                let mut br = BitReader::new(&bytes);
+                let mut heights = [0u16; 256];
+                for i in (0..256).rev() {
+                    heights[i] = br.read_u16(9).unwrap();
+                }
+
+                heightmaps.insert((cx as u8, cz as u8), heights);
+            }
+        }
+    }
+
+    Ok(heightmaps)
+}
+
 pub fn read_dat_file(path: &Path) -> Result<(), Error> {
     let file = File::open(path)?;
-    let mut level_reader = GzDecoder::new(file);
+    let mut reader = GzDecoder::new(file);
 
     println!("================================= NBT Contents =================================");
-    let blob = match Blob::from_reader(&mut level_reader) {
+    let blob = match Blob::from_reader(&mut reader) {
         Ok(blob) => blob,
         Err(err) => return Err(Error::new(ErrorKind::InvalidData,
             format!("Error reading NBT: {}", err))),

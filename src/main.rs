@@ -2,6 +2,7 @@ use std::env;
 use std::path::Path;
 
 mod data;
+mod heightmaps;
 mod image;
 mod tinymaps;
 
@@ -28,7 +29,8 @@ fn main() {
                 let outpath = outdir.join(format!("{}.png", mode));
 
                 let result = match mode {
-                    "region" => tinymaps::draw_region_chunk_map(inpath, outpath.as_path()),
+                    "region" => heightmaps::draw_region_heightmap(inpath, outpath.as_path()),
+                    // "region" => tinymaps::draw_region_chunk_map(inpath, outpath.as_path()),
                     _ => tinymaps::draw_world_chunk_map(inpath, outpath.as_path()),
                 };
 

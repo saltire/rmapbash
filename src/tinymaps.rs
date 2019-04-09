@@ -11,16 +11,16 @@ pub fn draw_world_region_map(worldpath: &Path, outpath: &Path) -> Result<(), Box
 
     let regions = data::read_world_regions(worldpath)?;
 
-    let min_x = regions.iter().map(|(x, _)| x).min().unwrap();
-    let max_x = regions.iter().map(|(x, _)| x).max().unwrap();
-    let min_z = regions.iter().map(|(_, z)| z).min().unwrap();
-    let max_z = regions.iter().map(|(_, z)| z).max().unwrap();
-    let width = max_x - min_x + 1;
-    let height = max_z - min_z + 1;
+    let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
+    let max_rx = regions.iter().map(|(x, _)| x).max().unwrap();
+    let min_rz = regions.iter().map(|(_, z)| z).min().unwrap();
+    let max_rz = regions.iter().map(|(_, z)| z).max().unwrap();
+    let width = max_rx - min_rx + 1;
+    let height = max_rz - min_rz + 1;
 
     let mut pixels: Vec<bool> = vec![false; (width * height) as usize];
     for (rx, rz) in regions.iter() {
-        pixels[((rz - min_z) * width + (rx - min_x)) as usize] = true;
+        pixels[((rz - min_rz) * width + (rx - min_rx)) as usize] = true;
     }
 
     let file = File::create(outpath)?;
@@ -48,8 +48,8 @@ pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 
         let ro = (rz - min_rz) * cwidth * 32 + (rx - min_rx) * 32;
 
-        for cx in 0..32 {
-            for cz in 0..32 {
+        for cz in 0..32 {
+            for cx in 0..32 {
                 pixels[(ro + cz * cwidth + cx) as usize] = regionpixels[(cz * 32 + cx) as usize];
             }
         }
@@ -61,6 +61,7 @@ pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn draw_region_chunk_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Drawing map of chunks from region file {}", regionpath.display());
 
