@@ -1,4 +1,4 @@
-use std::fs;
+use std::fs::File;
 use std::io::{prelude::*, Error, ErrorKind};
 use std::path::Path;
 use std::result::Result;
@@ -22,7 +22,7 @@ pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
     let mut regions = Vec::new();
     let re = Regex::new(r"^r\.([-\d]+)\.([-\d]+)\.mca$").unwrap();
 
-    for entry in fs::read_dir(region_path)? {
+    for entry in std::fs::read_dir(region_path)? {
         if let Some(filename) = entry?.file_name().to_str() {
             if let Some(caps) = re.captures(filename) {
                 let rx = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
@@ -36,7 +36,7 @@ pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
 }
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
-    let mut f = fs::File::open(path)?;
+    let mut f = File::open(path)?;
     let mut buf = [0; 4];
     let mut chunks = [false; 1024];
 
@@ -52,9 +52,8 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     Ok(chunks)
 }
 
-#[allow(dead_code)]
-fn read_dat_file(path: &Path) -> Result<(), Error> {
-    let file = fs::File::open(path)?;
+pub fn read_dat_file(path: &Path) -> Result<(), Error> {
+    let file = File::open(path)?;
     let mut level_reader = GzDecoder::new(file);
 
     println!("================================= NBT Contents =================================");
