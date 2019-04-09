@@ -31,7 +31,7 @@ pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
 pub fn draw_height_map(pixels: &[u8], width: u32, height: u32, file: File)
 -> Result<(), png::EncodingError> {
     let size = (width * height * 4) as usize;
-    println!("Map size {}x{} ({} bytes)", width, height, size);
+    println!("Drawing map of size {}x{} ({} bytes)", width, height, size);
 
     let mut data: Vec<u8> = vec![0; size];
     pixels.iter().enumerate().for_each(|(i, value)| {

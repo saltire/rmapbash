@@ -7,10 +7,9 @@ use super::image;
 
 #[allow(dead_code)]
 pub fn draw_world_region_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
-    println!("Drawing map of regions from world dir {}", worldpath.display());
+    println!("Creating map of regions from world dir {}", worldpath.display());
 
     let regions = data::read_world_regions(worldpath)?;
-
     let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
     let max_rx = regions.iter().map(|(x, _)| x).max().unwrap();
     let min_rz = regions.iter().map(|(_, z)| z).min().unwrap();
@@ -29,11 +28,11 @@ pub fn draw_world_region_map(worldpath: &Path, outpath: &Path) -> Result<(), Box
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
-    println!("Drawing map of chunks from world dir {}", worldpath.display());
+    println!("Creating map of chunks from world dir {}", worldpath.display());
 
     let regions = data::read_world_regions(worldpath)?;
-
     let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
     let max_rx = regions.iter().map(|(x, _)| x).max().unwrap();
     let min_rz = regions.iter().map(|(_, z)| z).min().unwrap();
@@ -63,7 +62,7 @@ pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 
 #[allow(dead_code)]
 pub fn draw_region_chunk_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
-    println!("Drawing map of chunks from region file {}", regionpath.display());
+    println!("Creating map of chunks from region file {}", regionpath.display());
 
     let pixels = data::read_region_chunks(regionpath)?;
 
