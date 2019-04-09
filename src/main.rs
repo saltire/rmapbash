@@ -39,7 +39,7 @@ mod image;
 //     }
 // }
 
-// fn draw_world_region_map(worldpath: &Path) -> Result<&str, Box<Error>> {
+// fn draw_world_region_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
 //     println!("Drawing map of regions from world dir {}", worldpath.display());
 
 //     let regions = data::read_regions(worldpath)?;
@@ -56,15 +56,13 @@ mod image;
 //         pixels[((rz - min_z) * width + (rx - min_x)) as usize] = true;
 //     }
 
-//     let outpath = Path::new("./world.png");
 //     let file = File::create(outpath)?;
-
 //     image::draw_tiny_map(pixels.as_slice(), width as u32, height as u32, file)?;
 
-//     Ok(outpath.to_str().unwrap())
+//     Ok(())
 // }
 
-fn draw_world_chunk_map(worldpath: &Path) -> Result<&str, Box<Error>> {
+fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Drawing map of chunks from world dir {}", worldpath.display());
 
     let regions = data::read_regions(worldpath)?;
@@ -90,40 +88,45 @@ fn draw_world_chunk_map(worldpath: &Path) -> Result<&str, Box<Error>> {
         }
     }
 
-    let outpath = Path::new("./world.png");
     let file = File::create(outpath)?;
-
     image::draw_tiny_map(pixels.as_slice(), cwidth as u32, cheight as u32, file)?;
 
-    Ok(outpath.to_str().unwrap())
+    Ok(())
 }
 
-fn draw_region_chunk_map(regionpath: &Path) -> Result<&str, Box<Error>> {
+fn draw_region_chunk_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Drawing map of chunks from region file {}", regionpath.display());
 
     let pixels = data::read_region_chunks(regionpath)?;
 
-    let outpath = Path::new("./region.png");
     let file = File::create(outpath)?;
-
     image::draw_tiny_map(&pixels, 32, 32, file)?;
 
-    Ok(outpath.to_str().unwrap())
+    Ok(())
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     if let Some(arg) = args.into_iter().skip(1).take(1).next() {
-        let path = Path::new(&arg);
+        let inpath = Path::new(&arg);
 
-        let result = match path.extension() {
-            Some(ext) if ext == "mca" => draw_region_chunk_map(path),
-            _ => draw_world_chunk_map(path),
+        let mode = match inpath.extension() {
+            Some(ext) if ext == "mca" => "region",
+            _ => "world",
+        };
+
+        let outdir = Path::new("./results");
+        std::fs::create_dir_all(outdir).unwrap();
+        let outpath = outdir.join(format!("{}.png", mode));
+
+        let result = match mode {
+            "region" => draw_region_chunk_map(inpath, outpath.as_path()),
+            _ => draw_world_chunk_map(inpath, outpath.as_path()),
         };
 
         match result {
-            Ok(outpath) => println!("Saved map to {}", outpath),
+            Ok(()) => println!("Saved map to {}", outpath.display()),
             Err(err) => {
                 eprintln!("error: {}", err);
                 exit(1)
