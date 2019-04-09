@@ -1,7 +1,7 @@
 extern crate regex;
 
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io::{prelude::*, Error, ErrorKind};
 use std::path::Path;
 use std::result::Result;
 
@@ -31,4 +31,21 @@ pub fn read_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
     }
 
     Ok(regions)
+}
+
+pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
+    let mut f = fs::File::open(path)?;
+    let mut buf = [0; 4];
+    let mut chunks = [false; 1024];
+
+    for p in 0..1024 {
+        f.read(&mut buf)?;
+        let val = ((buf[0] as u32) << 24) | ((buf[1] as u32) << 16) |
+            ((buf[2] as u32) << 8) | buf[3] as u32;
+        if val > 0 {
+            chunks[p] = true;
+        }
+    }
+
+    Ok(chunks)
 }

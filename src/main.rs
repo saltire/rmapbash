@@ -3,6 +3,7 @@
 // extern crate serde_json;
 
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::process::exit;
@@ -38,7 +39,9 @@ mod image;
 //     }
 // }
 
-fn draw_region_map(worldpath: &Path) -> Result<(), Box<std::error::Error>> {
+fn draw_world_region_map(worldpath: &Path) -> Result<&str, Box<Error>> {
+    println!("Drawing map from world dir {}", worldpath.display());
+
     let regions = data::read_regions(worldpath)?;
 
     let min_x = regions.iter().map(|(x, _)| x).min().unwrap();
@@ -53,12 +56,25 @@ fn draw_region_map(worldpath: &Path) -> Result<(), Box<std::error::Error>> {
         pixels[((z - min_z) * width + (x - min_x)) as usize] = true;
     }
 
-    let outpath = Path::new("./map.png");
+    let outpath = Path::new("./world.png");
     let file = File::create(outpath)?;
 
     image::draw_tiny_map(pixels.as_slice(), width as u32, height as u32, file)?;
 
-    Ok(())
+    Ok(outpath.to_str().unwrap())
+}
+
+fn draw_region_chunk_map(regionpath: &Path) -> Result<&str, Box<Error>> {
+    println!("Drawing map from region file {}", regionpath.display());
+
+    let pixels = data::read_region_chunks(regionpath)?;
+
+    let outpath = Path::new("./region.png");
+    let file = File::create(outpath)?;
+
+    image::draw_tiny_map(&pixels, 32, 32, file)?;
+
+    Ok(outpath.to_str().unwrap())
 }
 
 fn main() {
@@ -66,8 +82,14 @@ fn main() {
 
     if let Some(arg) = args.into_iter().skip(1).take(1).next() {
         let path = Path::new(&arg);
-        match draw_region_map(path) {
-            Ok(()) => println!("Done."),
+
+        let result = match path.extension() {
+            Some(ext) if ext == "mca" => draw_region_chunk_map(path),
+            _ => draw_world_region_map(path),
+        };
+
+        match result {
+            Ok(outpath) => println!("Saved map to {}", outpath),
             Err(err) => {
                 eprintln!("error: {}", err);
                 exit(1)
