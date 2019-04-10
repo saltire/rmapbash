@@ -13,13 +13,10 @@ use nbt::Blob;
 
 use regex::Regex;
 
-fn read_u32(f: &mut File) -> Result<u32, Error> {
+fn read_u32(file: &mut File) -> Result<u32, Error> {
     let mut buf = [0; 4];
-    f.read(&mut buf)?;
-    Ok(((buf[0] as u32) << 24) |
-        ((buf[1] as u32) << 16) |
-        ((buf[2] as u32) << 8) |
-        buf[3] as u32)
+    file.read(&mut buf)?;
+    Ok(((buf[0] as u32) << 24) | ((buf[1] as u32) << 16) | ((buf[2] as u32) << 8) | buf[3] as u32)
 }
 
 pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
@@ -49,11 +46,11 @@ pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
 }
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
-    let mut f = File::open(path)?;
+    let mut file = File::open(path)?;
     let mut chunks = [false; 1024];
 
     for p in 0..1024 {
-        if read_u32(&mut f)? > 0 {
+        if read_u32(&mut file)? > 0 {
             chunks[p] = true;
         }
     }
@@ -62,12 +59,12 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
 }
 
 pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<(u8, u8)>, Error> {
-    let mut f = File::open(path)?;
+    let mut file = File::open(path)?;
     let mut chunks: Vec<(u8, u8)> = vec![];
 
     for cz in 0..32 {
         for cx in 0..32 {
-            if read_u32(&mut f)? > 0 {
+            if read_u32(&mut file)? > 0 {
                 chunks.push((cx, cz));
             }
         }
@@ -76,25 +73,33 @@ pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<(u8, u8)>, Error> {
     Ok(chunks)
 }
 
+fn read_region_chunk(file: &mut File, cx: u8, cz: u8) -> Result<Option<Blob>, Error> {
+    let co = (cz as u64 * 32 + cx as u64) * 4;
+    file.seek(SeekFrom::Start(co))?;
+
+    let offset = (read_u32(file)? >> 8) * 4096;
+    if offset > 0 {
+        file.seek(SeekFrom::Start(offset as u64))?;
+        let size = read_u32(file)? as usize;
+        let data = vec![0u8; size - 1];
+        file.seek(SeekFrom::Current(1))?;
+
+        let mut reader = ZlibDecoder::new_with_buf(file, data);
+        Ok(Some(Blob::from_reader(&mut reader)?))
+    }
+    else {
+        Ok(None)
+    }
+}
+
 pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
-    let mut f = File::open(path)?;
+    let mut file = File::open(path)?;
     let mut heightmaps = HashMap::new();
 
     for cz in 0..32 {
         for cx in 0..32 {
-            let co = (cz * 32 + cx) * 4;
-            f.seek(SeekFrom::Start(co))?;
-
-            let offset = (read_u32(&mut f)? >> 8) * 4096;
-            if offset > 0 {
-                f.seek(SeekFrom::Start(offset as u64))?;
-                let size = read_u32(&mut f)? as usize;
-                let data = vec![0u8; size - 1];
-                f.seek(SeekFrom::Current(1))?;
-
-                let mut reader = ZlibDecoder::new_with_buf(&mut f, data);
-                let blob = Blob::from_reader(&mut reader)?;
-                let value: serde_json::Value = serde_json::to_value(&blob)?;
+            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
+                let value: serde_json::Value = serde_json::to_value(&chunk)?;
                 let longs = &value["Level"]["Heightmaps"]["WORLD_SURFACE"];
 
                 let mut bytes = [0u8; 288];
