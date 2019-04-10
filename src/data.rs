@@ -53,8 +53,7 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     let mut chunks = [false; 1024];
 
     for p in 0..1024 {
-        let val = read_u32(&mut f)?;
-        if val > 0 {
+        if read_u32(&mut f)? > 0 {
             chunks[p] = true;
         }
     }
@@ -62,7 +61,22 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     Ok(chunks)
 }
 
-pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u16; 256]>, Error> {
+pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<(u8, u8)>, Error> {
+    let mut f = File::open(path)?;
+    let mut chunks: Vec<(u8, u8)> = vec![];
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            if read_u32(&mut f)? > 0 {
+                chunks.push((cx, cz));
+            }
+        }
+    }
+
+    Ok(chunks)
+}
+
+pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
     let mut f = File::open(path)?;
     let mut heightmaps = HashMap::new();
 
@@ -93,9 +107,9 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u1
                 }
 
                 let mut br = BitReader::new(&bytes);
-                let mut heights = [0u16; 256];
+                let mut heights = [0u8; 256];
                 for i in (0..256).rev() {
-                    heights[i] = br.read_u16(9).unwrap();
+                    heights[i] = br.read_u16(9).unwrap() as u8;
                 }
 
                 heightmaps.insert((cx as u8, cz as u8), heights);
