@@ -38,7 +38,7 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             }
             if rx == min_rx {
                 let min_cx = chunks.iter().map(|(x, _)| x).min().unwrap();
-                margins.3 = std::cmp::min(margins.0, *min_cx);
+                margins.3 = std::cmp::min(margins.3, *min_cx);
             }
         }
     }
