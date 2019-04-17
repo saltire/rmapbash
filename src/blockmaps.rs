@@ -8,7 +8,7 @@ use super::data;
 use super::image;
 
 fn get_blocks() -> Vec<StringRecord> {
-    let csvpath = Path::new("./resources/colors.csv");
+    let csvpath = Path::new("./resources/blocks.csv");
     let mut reader = Reader::from_path(csvpath).unwrap();
     let mut blocks = Vec::new();
     for result in reader.records() {

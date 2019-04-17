@@ -1,5 +1,4 @@
 import csv
-import math
 import os
 
 from PIL import Image
@@ -42,27 +41,24 @@ for imgfile in sorted(os.listdir(blocktexdir)):
     else:
         if im.mode in ['RGB', 'RGBA']:
             color = (
-                math.floor(sum(rr) / len(rr)),
-                math.floor(sum(gg) / len(gg)),
-                math.floor(sum(bb) / len(bb)),
-                math.floor(sum(aa) / len(aa)) if im.mode == 'RGBA' else 255,
+                int(sum(rr) / len(rr)),
+                int(sum(gg) / len(gg)),
+                int(sum(bb) / len(bb)),
+                int(sum(aa) / len(aa)) if im.mode == 'RGBA' else 255,
             )
         elif im.mode == 'LA':
-            l = math.floor(sum(rr) / len(rr))
-            color = (l, l, l, math.floor(sum(aa) / len(aa)))
+            l = int(sum(rr) / len(rr))
+            color = (l, l, l, int(sum(aa) / len(aa)))
 
     colors[imgfile[:-4]] = color
 
-    # writer.writerow([imgfile[:-4], *color])
-    # print(','.join([imgfile[:-4], *[str(c) for c in color]]))
-
-with open('blocks.csv', 'r') as blockfile:
+with open('blocknames.csv', 'r') as blockfile:
     blocks = [b.strip() for b in blockfile.readlines()]
-    # print(blocks)
 
-    with open('blockcolors.csv', 'w') as csvfile:
+    with open('blocks.csv', 'w') as csvfile:
         writer = csv.writer(csvfile)
 
+        writer.writerow(['block', 'r', 'g', 'b', 'a'])
         for block in blocks:
             writer.writerow([block, *colors.get(block, ['','','',''])])
 
@@ -72,6 +68,3 @@ with open('texturecolors.csv', 'w') as csvfile:
 
     for texture, color in colors.items():
         writer.writerow([texture, *color])
-
-
-# print(blocks)
