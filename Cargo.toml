@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 bitreader = "0.3"
+csv = "1.0"
 hematite-nbt = "0.4"
 flate2 = "1.0"
 png = "0.14"

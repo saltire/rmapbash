@@ -74,6 +74,7 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn draw_region_heightmap(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating heightmap from region file {}", regionpath.display());
 
@@ -92,7 +93,9 @@ pub fn draw_region_heightmap(regionpath: &Path, outpath: &Path) -> Result<(), Bo
 
     let mut pixels: Vec<u8> = vec![0; (width * height) as usize];
     for ((cx, cz), cpixels) in heightmaps.iter() {
-        let co = (cz - min_cz) as u32 * width * 16 + (cx - min_cx) as u32 * 16;
+        let acx = (cx - min_cx) as u32;
+        let acz = (cz - min_cz) as u32;
+        let co = acz * 16 * width + acx * 16;
 
         for bz in 0..16 {
             for bx in 0..16 {

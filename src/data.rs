@@ -125,6 +125,57 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
     Ok(heightmaps)
 }
 
+pub fn read_region_chunk_block_maps(path: &Path, block_names: &[String])
+-> Result<HashMap<(u8, u8), [u16; 65536]>, Error> {
+    let mut file = File::open(path)?;
+    let mut blockmaps = HashMap::new();
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
+                // println!("Reading chunk {}, {}", cx, cz);
+                let value: serde_json::Value = serde_json::to_value(&chunk)?;
+
+                let mut blocks = [0u16; 65536];
+
+                for section in value["Level"]["Sections"].as_array().unwrap() {
+                    let so = (section["Y"].as_u64().unwrap() * 4096) as usize;
+
+                    let palette: Vec<u16> = section["Palette"].as_array().unwrap().iter()
+                        .map(|obj| obj["Name"].as_str().unwrap().trim_start_matches("minecraft:"))
+                        .map(|block| block_names.iter().position(|b| b == block).unwrap() as u16)
+                        .collect();
+
+                    let states = section["BlockStates"].as_array().unwrap();
+                    let len = states.len();
+
+                    let mut bytes = vec![0u8; len * 8];
+                    for i in 0..len {
+                        if let Some(long) = states[len - i - 1].as_i64() {
+                            for b in 0..8 {
+                                bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
+                            }
+                        }
+                    }
+
+                    // BlockStates is an array of i64 representing 4096 blocks,
+                    // but we have to check the array length to determine the # of bits per block.
+                    let bits = (len / 64) as u8;
+
+                    let mut br = BitReader::new(&bytes);
+                    for i in (0..4096).rev() {
+                        blocks[so + i] = palette[br.read_u16(bits).unwrap() as usize];
+                    }
+                }
+
+                blockmaps.insert((cx as u8, cz as u8), blocks);
+            }
+        }
+    }
+
+    Ok(blockmaps)
+}
+
 pub fn read_dat_file(path: &Path) -> Result<(), Error> {
     let file = File::open(path)?;
     let mut reader = GzDecoder::new(file);

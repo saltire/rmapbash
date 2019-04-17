@@ -6,7 +6,7 @@ use png::HasParameters;
 pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
 -> Result<(), png::EncodingError> {
     let size = (width * height) as usize;
-    println!("Map size {}x{} ({} bytes)", width, height, size);
+    println!("Drawing map of size {}x{} ({} bytes)", width, height, size);
 
     let mut data: Vec<u8> = vec![0; size];
     pixels.iter().enumerate().filter(|(_, v)| **v).for_each(|(i, _)| {
@@ -34,6 +34,23 @@ pub fn draw_height_map(pixels: &[u8], width: u32, height: u32, file: File)
     let mut encoder = png::Encoder::new(w, width, height);
     encoder
         .set(png::ColorType::Grayscale)
+        .set(png::BitDepth::Eight);
+
+    let mut writer = encoder.write_header()?;
+    writer.write_image_data(&pixels)?;
+
+    Ok(())
+}
+
+pub fn draw_block_map(pixels: &[u8], width: usize, height: usize, file: File)
+-> Result<(), png::EncodingError> {
+    let size = width * height;
+    println!("Drawing map of size {}x{} ({} bytes)", width, height, size);
+
+    let ref mut w = BufWriter::new(file);
+    let mut encoder = png::Encoder::new(w, width as u32, height as u32);
+    encoder
+        .set(png::ColorType::RGBA)
         .set(png::BitDepth::Eight);
 
     let mut writer = encoder.write_header()?;
