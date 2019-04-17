@@ -5,6 +5,7 @@ use std::path::Path;
 use super::data;
 use super::image;
 
+#[allow(dead_code)]
 pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating heightmap from world dir {}", worldpath.display());
 
@@ -48,14 +49,13 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     let mut pixels: Vec<u8> = vec![0; (width * height) as usize];
     for (rx, rz) in regions.iter() {
         println!("Reading heightmap for region {}, {}", rx, rz);
+        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
+        let rheightmaps = data::read_region_chunk_heightmaps(regionpath.as_path())?;
 
         let arx = (rx - min_rx) as u32;
         let arz = (rz - min_rz) as u32;
 
-        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
-        let heightmaps = data::read_region_chunk_heightmaps(regionpath.as_path())?;
-
-        for ((cx, cz), cpixels) in heightmaps.iter() {
+        for ((cx, cz), cpixels) in rheightmaps.iter() {
             let acx = arx * 32 + *cx as u32;
             let acz = arz * 32 + *cz as u32;
             let co = (acz - margins.0 as u32) * 16 * width + (acx - margins.3 as u32) * 16;
