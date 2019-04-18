@@ -2,17 +2,36 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use csv::{Reader, StringRecord};
+use csv::Reader;
 
 use super::data;
 use super::image;
 
-fn get_blocks() -> Vec<StringRecord> {
+// #[derive(Debug)]
+struct BlockType {
+    name: String,
+    color: (u8, u8, u8, u8),
+    foliage: bool,
+    grass: bool,
+}
+
+fn get_blocks() -> Vec<BlockType> {
     let csvpath = Path::new("./resources/blocks.csv");
     let mut reader = Reader::from_path(csvpath).unwrap();
     let mut blocks = Vec::new();
     for result in reader.records() {
-        blocks.push(result.unwrap());
+        let blocktype = result.unwrap();
+        blocks.push(BlockType {
+            name: blocktype[0].to_string(),
+            color: (
+                blocktype[1].parse().unwrap_or(0),
+                blocktype[2].parse().unwrap_or(0),
+                blocktype[3].parse().unwrap_or(0),
+                blocktype[4].parse().unwrap_or(0),
+            ),
+            foliage: blocktype[5] == *"1",
+            grass: blocktype[6] == *"1",
+        });
     }
     blocks
 }
@@ -21,7 +40,7 @@ fn is_empty(block: u16) -> bool {
     block == 0 || block == 14 || block == 98 || block == 563
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<StringRecord>, cblocks: &[u16], co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<BlockType>, cblocks: &[u16], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
             let mut topblock = 0;
@@ -32,11 +51,13 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<StringRecord>, cblocks: &[u16]
                     break;
                 }
             }
-            let po = co + bz * width + bx;
             let blocktype = &blocktypes[topblock as usize];
-            for c in 0..4 {
-                pixels[po * 4 + c] = blocktype[c + 1].parse().unwrap_or(0);
-            }
+
+            let po = (co + bz * width + bx) * 4;
+            pixels[po] = blocktype.color.0;
+            pixels[po + 1] = blocktype.color.1;
+            pixels[po + 2] = blocktype.color.2;
+            pixels[po + 3] = blocktype.color.3;
         }
     }
 }
@@ -45,7 +66,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     println!("Creating block map from world dir {}", worldpath.display());
 
     let blocktypes = get_blocks();
-    let blocknames: Vec<String> = blocktypes.iter().map(|b| b[0].to_string()).collect();
+    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let regions = data::read_world_regions(worldpath)?;
     let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
@@ -114,7 +135,7 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     println!("Creating block map from region file {}", regionpath.display());
 
     let blocktypes = get_blocks();
-    let blocknames: Vec<String> = blocktypes.iter().map(|b| b[0].to_string()).collect();
+    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let blockmaps = data::read_region_chunk_block_maps(regionpath, &blocknames)?;
     if blockmaps.keys().len() == 0 {

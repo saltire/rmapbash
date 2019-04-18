@@ -125,7 +125,7 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
     Ok(heightmaps)
 }
 
-pub fn read_region_chunk_block_maps(path: &Path, block_names: &[String])
+pub fn read_region_chunk_block_maps(path: &Path, block_names: &[&str])
 -> Result<HashMap<(u8, u8), [u16; 65536]>, Error> {
     let mut file = File::open(path)?;
     let mut blockmaps = HashMap::new();
@@ -143,7 +143,7 @@ pub fn read_region_chunk_block_maps(path: &Path, block_names: &[String])
 
                     let palette: Vec<u16> = section["Palette"].as_array().unwrap().iter()
                         .map(|obj| obj["Name"].as_str().unwrap().trim_start_matches("minecraft:"))
-                        .map(|block| block_names.iter().position(|b| b == block).unwrap() as u16)
+                        .map(|block| block_names.iter().position(|b| b == &block).unwrap() as u16)
                         .collect();
 
                     let states = section["BlockStates"].as_array().unwrap();
