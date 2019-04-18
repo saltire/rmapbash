@@ -2,7 +2,9 @@ use std::env;
 use std::path::Path;
 
 mod biomemaps;
+mod biometypes;
 mod blockmaps;
+mod blocktypes;
 mod data;
 mod heightmaps;
 mod image;

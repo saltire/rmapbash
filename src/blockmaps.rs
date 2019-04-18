@@ -2,45 +2,18 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use csv::Reader;
-
+use super::biometypes;
+use super::blocktypes;
 use super::data;
 use super::image;
-
-// #[derive(Debug)]
-struct BlockType {
-    name: String,
-    color: (u8, u8, u8, u8),
-    foliage: bool,
-    grass: bool,
-}
-
-fn get_blocks() -> Vec<BlockType> {
-    let csvpath = Path::new("./resources/blocks.csv");
-    let mut reader = Reader::from_path(csvpath).unwrap();
-    let mut blocks = Vec::new();
-    for result in reader.records() {
-        let blocktype = result.unwrap();
-        blocks.push(BlockType {
-            name: blocktype[0].to_string(),
-            color: (
-                blocktype[1].parse().unwrap_or(0),
-                blocktype[2].parse().unwrap_or(0),
-                blocktype[3].parse().unwrap_or(0),
-                blocktype[4].parse().unwrap_or(0),
-            ),
-            foliage: blocktype[5] == *"1",
-            grass: blocktype[6] == *"1",
-        });
-    }
-    blocks
-}
 
 fn is_empty(block: u16) -> bool {
     block == 0 || block == 14 || block == 98 || block == 563
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<BlockType>, cblocks: &[u16], co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8],
+    blocktypes: &Vec<blocktypes::BlockType>, biometypes: &Vec<biometypes::BiomeType>,
+    cblocks: &[u16], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
             let mut topblock = 0;
@@ -53,11 +26,22 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<BlockType>, cblocks: &[u16], c
             }
             let blocktype = &blocktypes[topblock as usize];
 
+            let color = if blocktype.foliage || blocktype.grass {
+                let bbiome_id = cbiomes[bz * 16 + bx];
+                if let Some(bbiome) = biometypes.iter().find(|bt| bt.id == bbiome_id) {
+                    if blocktype.foliage { bbiome.foliage } else { bbiome.grass }
+                } else {
+                    blocktype.color
+                }
+            } else {
+                blocktype.color
+            };
+
             let po = (co + bz * width + bx) * 4;
-            pixels[po] = blocktype.color.0;
-            pixels[po + 1] = blocktype.color.1;
-            pixels[po + 2] = blocktype.color.2;
-            pixels[po + 3] = blocktype.color.3;
+            pixels[po] = color.0;
+            pixels[po + 1] = color.1;
+            pixels[po + 2] = color.2;
+            pixels[po + 3] = color.3;
         }
     }
 }
@@ -65,7 +49,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<BlockType>, cblocks: &[u16], c
 pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
-    let blocktypes = get_blocks();
+    let biometypes = biometypes::get_biome_types();
+    let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let regions = data::read_world_regions(worldpath)?;
@@ -109,19 +94,22 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     for (rx, rz) in regions.iter() {
         println!("Reading block maps for region {}, {}", rx, rz);
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
-        let rblockmaps = data::read_region_chunk_block_maps(regionpath.as_path(), &blocknames)?;
+
+        let rbiomes = data::read_region_chunk_biomes(regionpath.as_path())?;
+        let rblocks = data::read_region_chunk_block_maps(regionpath.as_path(), &blocknames)?;
 
         println!("Drawing block maps for region {}, {}", rx, rz);
         let arx = (rx - min_rx) as usize;
         let arz = (rz - min_rz) as usize;
 
-        for ((cx, cz), cblocks) in rblockmaps.iter() {
+        for (c, cblocks) in rblocks.iter() {
+            let (cx, cz) = c;
             // println!("Drawing chunk {}, {}", cx, cz);
             let acx = arx * 32 + *cx as usize;
             let acz = arz * 32 + *cz as usize;
             let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
+            draw_chunk(&mut pixels, &blocktypes, &biometypes, cblocks, &rbiomes[c], &co, &width);
         }
     }
 
@@ -134,31 +122,35 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating block map from region file {}", regionpath.display());
 
-    let blocktypes = get_blocks();
+    let biometypes = biometypes::get_biome_types();
+    let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
-    let blockmaps = data::read_region_chunk_block_maps(regionpath, &blocknames)?;
-    if blockmaps.keys().len() == 0 {
+    let rbiomes = data::read_region_chunk_biomes(regionpath)?;
+
+    let rblocks = data::read_region_chunk_block_maps(regionpath, &blocknames)?;
+    if rblocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
-    let min_cx = blockmaps.keys().map(|(x, _)| x).min().unwrap();
-    let max_cx = blockmaps.keys().map(|(x, _)| x).max().unwrap();
-    let min_cz = blockmaps.keys().map(|(_, z)| z).min().unwrap();
-    let max_cz = blockmaps.keys().map(|(_, z)| z).max().unwrap();
+    let min_cx = rblocks.keys().map(|(x, _)| x).min().unwrap();
+    let max_cx = rblocks.keys().map(|(x, _)| x).max().unwrap();
+    let min_cz = rblocks.keys().map(|(_, z)| z).min().unwrap();
+    let max_cz = rblocks.keys().map(|(_, z)| z).max().unwrap();
     let width = (max_cx - min_cx + 1) as usize * 16;
     let height = (max_cz - min_cz + 1) as usize * 16;
 
     let mut pixels: Vec<u8> = vec![0; width * height * 4];
 
-    for ((cx, cz), cblocks) in blockmaps.iter() {
+    for (c, cblocks) in rblocks.iter() {
+        let (cx, cz) = c;
         // println!("Drawing chunk {}, {}", cx, cz);
         let acx = (cx - min_cx) as usize;
         let acz = (cz - min_cz) as usize;
         let co = acz * 16 * width + acx * 16;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
+        draw_chunk(&mut pixels, &blocktypes, &biometypes, cblocks, &rbiomes[c], &co, &width);
     }
 
     let file = File::create(outpath)?;

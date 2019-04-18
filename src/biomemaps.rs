@@ -2,48 +2,16 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use csv::Reader;
-
+use super::biometypes;
 use super::data;
 use super::image;
 
-// #[derive(Debug)]
-struct Biome {
-    id: u8,
-    // name: String,
-    // foliage: (u8, u8, u8),
-    grass: (u8, u8, u8),
-}
-
-fn get_biomes() -> Vec<Biome> {
-    let csvpath = Path::new("./resources/biomes.csv");
-    let mut reader = Reader::from_path(csvpath).unwrap();
-    let mut biomes = Vec::new();
-    for result in reader.records() {
-        let row = result.unwrap();
-        biomes.push(Biome {
-            id: row[0].parse().unwrap(),
-            // name: row[1].to_string(),
-            // foliage: (
-            //     row[2].parse().unwrap(),
-            //     row[3].parse().unwrap(),
-            //     row[4].parse().unwrap(),
-            // ),
-            grass: (
-                row[5].parse().unwrap(),
-                row[6].parse().unwrap(),
-                row[7].parse().unwrap(),
-            ),
-        });
-    }
-    biomes
-}
-
-fn draw_chunk(pixels: &mut [u8], cbiomes: &[u8], biomes: &Vec<Biome>, co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], cbiomes: &[u8], biometypes: &Vec<biometypes::BiomeType>,
+    co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
             let bbiome = cbiomes[(bz * 16 + bx) as usize];
-            if let Some(biome) = biomes.iter().find(|b| b.id == bbiome) {
+            if let Some(biome) = biometypes.iter().find(|b| b.id == bbiome) {
                 let po = (co + bz * width + bx) * 4;
                 pixels[po] = biome.grass.0;
                 pixels[po + 1] = biome.grass.1;
@@ -58,7 +26,7 @@ fn draw_chunk(pixels: &mut [u8], cbiomes: &[u8], biomes: &Vec<Biome>, co: &usize
 pub fn draw_world_biome_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating biome map from world dir {}", worldpath.display());
 
-    let biomes = get_biomes();
+    let biometypes = biometypes::get_biome_types();
 
     let regions = data::read_world_regions(worldpath)?;
     let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
@@ -111,7 +79,7 @@ pub fn draw_world_biome_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             let acz = arz * 32 + *cz as usize;
             let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
 
-            draw_chunk(&mut pixels, cbiomes, &biomes, &co, &width);
+            draw_chunk(&mut pixels, cbiomes, &biometypes, &co, &width);
         }
     }
 
@@ -125,7 +93,7 @@ pub fn draw_world_biome_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 pub fn draw_region_biome_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating biome map from region file {}", regionpath.display());
 
-    let biomes = get_biomes();
+    let biometypes = biometypes::get_biome_types();
 
     let rbiomes = data::read_region_chunk_biomes(regionpath)?;
     if rbiomes.keys().len() == 0 {
@@ -146,7 +114,7 @@ pub fn draw_region_biome_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         let acz = (cz - min_cz) as usize;
         let co = acz * 16 * width + acx * 16;
 
-        draw_chunk(&mut pixels, cbiomes, &biomes, &co, &width);
+        draw_chunk(&mut pixels, cbiomes, &biometypes, &co, &width);
     }
 
     let file = File::create(outpath)?;
