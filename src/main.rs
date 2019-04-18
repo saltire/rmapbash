@@ -1,6 +1,7 @@
 use std::env;
 use std::path::Path;
 
+mod biomemaps;
 mod blockmaps;
 mod data;
 mod heightmaps;
@@ -30,9 +31,11 @@ fn main() {
                 let outpath = outdir.join(format!("{}.png", mode));
 
                 let result = match mode {
+                    // "region" => biomemaps::draw_region_biome_map(inpath, outpath.as_path()),
                     "region" => blockmaps::draw_region_block_map(inpath, outpath.as_path()),
                     // "region" => heightmaps::draw_region_heightmap(inpath, outpath.as_path()),
                     // "region" => tinymaps::draw_region_chunk_map(inpath, outpath.as_path()),
+                    // _ => biomemaps::draw_world_biome_map(inpath, outpath.as_path()),
                     _ => blockmaps::draw_world_block_map(inpath, outpath.as_path()),
                     // _ => heightmaps::draw_world_heightmap(inpath, outpath.as_path()),
                     // _ => tinymaps::draw_world_chunk_map(inpath, outpath.as_path()),

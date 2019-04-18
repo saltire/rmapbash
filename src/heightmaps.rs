@@ -5,7 +5,7 @@ use std::path::Path;
 use super::data;
 use super::image;
 
-fn draw_chunk(pixels: &mut [u8], cpixels: &[u8], co: &u32, width: &u32) {
+fn draw_chunk(pixels: &mut [u8], cpixels: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
             pixels[(co + bz * width + bx) as usize] = cpixels[(bz * 16 + bx) as usize];
@@ -51,8 +51,8 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             }
         }
     }
-    let width = ((max_rx - min_rx + 1) as u32 * 32 - (margins.1 + margins.3) as u32) * 16;
-    let height = ((max_rz - min_rz + 1) as u32 * 32 - (margins.0 + margins.2) as u32) * 16;
+    let width = ((max_rx - min_rx + 1) as usize * 32 - (margins.1 + margins.3) as usize) * 16;
+    let height = ((max_rz - min_rz + 1) as usize * 32 - (margins.0 + margins.2) as usize) * 16;
 
     let mut pixels: Vec<u8> = vec![0; (width * height) as usize];
     for (rx, rz) in regions.iter() {
@@ -60,20 +60,20 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
         let rheightmaps = data::read_region_chunk_heightmaps(regionpath.as_path())?;
 
-        let arx = (rx - min_rx) as u32;
-        let arz = (rz - min_rz) as u32;
+        let arx = (rx - min_rx) as usize;
+        let arz = (rz - min_rz) as usize;
 
         for ((cx, cz), cpixels) in rheightmaps.iter() {
-            let acx = arx * 32 + *cx as u32;
-            let acz = arz * 32 + *cz as u32;
-            let co = (acz - margins.0 as u32) * 16 * width + (acx - margins.3 as u32) * 16;
+            let acx = arx * 32 + *cx as usize;
+            let acz = arz * 32 + *cz as usize;
+            let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
 
             draw_chunk(&mut pixels, cpixels, &co, &width);
         }
     }
 
     let file = File::create(outpath)?;
-    image::draw_height_map(&pixels, width, height, file)?;
+    image::draw_block_map(&pixels, width, height, file, false)?;
 
     Ok(())
 }
@@ -92,20 +92,20 @@ pub fn draw_region_heightmap(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     let max_cx = heightmaps.keys().map(|(x, _)| x).max().unwrap();
     let min_cz = heightmaps.keys().map(|(_, z)| z).min().unwrap();
     let max_cz = heightmaps.keys().map(|(_, z)| z).max().unwrap();
-    let width = (max_cx - min_cx + 1) as u32 * 16;
-    let height = (max_cz - min_cz + 1) as u32 * 16;
+    let width = (max_cx - min_cx + 1) as usize * 16;
+    let height = (max_cz - min_cz + 1) as usize * 16;
 
-    let mut pixels: Vec<u8> = vec![0; (width * height) as usize];
+    let mut pixels: Vec<u8> = vec![0; width * height];
     for ((cx, cz), cpixels) in heightmaps.iter() {
-        let acx = (cx - min_cx) as u32;
-        let acz = (cz - min_cz) as u32;
+        let acx = (cx - min_cx) as usize;
+        let acz = (cz - min_cz) as usize;
         let co = acz * 16 * width + acx * 16;
 
         draw_chunk(&mut pixels, cpixels, &co, &width);
     }
 
     let file = File::create(outpath)?;
-    image::draw_height_map(&pixels, width, height, file)?;
+    image::draw_block_map(&pixels, width, height, file, false)?;
 
     Ok(())
 }

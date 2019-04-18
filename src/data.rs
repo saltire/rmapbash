@@ -92,39 +92,6 @@ fn read_region_chunk(file: &mut File, cx: u8, cz: u8) -> Result<Option<Blob>, Er
     }
 }
 
-pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
-    let mut file = File::open(path)?;
-    let mut heightmaps = HashMap::new();
-
-    for cz in 0..32 {
-        for cx in 0..32 {
-            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
-                let value: serde_json::Value = serde_json::to_value(&chunk)?;
-                let longs = &value["Level"]["Heightmaps"]["WORLD_SURFACE"];
-
-                let mut bytes = [0u8; 288];
-                for i in 0..36 {
-                    if let Some(long) = longs[35 - i].as_i64() {
-                        for b in 0..8 {
-                            bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
-                        }
-                    }
-                }
-
-                let mut br = BitReader::new(&bytes);
-                let mut heights = [0u8; 256];
-                for i in (0..256).rev() {
-                    heights[i] = br.read_u16(9).unwrap() as u8;
-                }
-
-                heightmaps.insert((cx as u8, cz as u8), heights);
-            }
-        }
-    }
-
-    Ok(heightmaps)
-}
-
 pub fn read_region_chunk_block_maps(path: &Path, block_names: &[&str])
 -> Result<HashMap<(u8, u8), [u16; 65536]>, Error> {
     let mut file = File::open(path)?;
@@ -174,6 +141,61 @@ pub fn read_region_chunk_block_maps(path: &Path, block_names: &[&str])
     }
 
     Ok(blockmaps)
+}
+
+pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
+    let mut file = File::open(path)?;
+    let mut biomes = HashMap::new();
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
+                let value: serde_json::Value = serde_json::to_value(&chunk)?;
+
+                let mut bytes = [0u8; 256];
+                for i in 0..256 {
+                    bytes[i] = value["Level"]["Biomes"][i].as_u64().unwrap_or(0) as u8;
+                }
+
+                biomes.insert((cx as u8, cz as u8), bytes);
+            }
+        }
+    }
+
+    Ok(biomes)
+}
+
+pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
+    let mut file = File::open(path)?;
+    let mut heightmaps = HashMap::new();
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
+                let value: serde_json::Value = serde_json::to_value(&chunk)?;
+                let longs = &value["Level"]["Heightmaps"]["WORLD_SURFACE"];
+
+                let mut bytes = [0u8; 288];
+                for i in 0..36 {
+                    if let Some(long) = longs[35 - i].as_i64() {
+                        for b in 0..8 {
+                            bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
+                        }
+                    }
+                }
+
+                let mut br = BitReader::new(&bytes);
+                let mut heights = [0u8; 256];
+                for i in (0..256).rev() {
+                    heights[i] = br.read_u16(9).unwrap() as u8;
+                }
+
+                heightmaps.insert((cx as u8, cz as u8), heights);
+            }
+        }
+    }
+
+    Ok(heightmaps)
 }
 
 pub fn read_dat_file(path: &Path) -> Result<(), Error> {

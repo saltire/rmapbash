@@ -8,65 +8,57 @@ use super::data;
 use super::image;
 
 // #[derive(Debug)]
-struct BlockType {
-    name: String,
-    color: (u8, u8, u8, u8),
-    foliage: bool,
-    grass: bool,
+struct Biome {
+    id: u8,
+    // name: String,
+    // foliage: (u8, u8, u8),
+    grass: (u8, u8, u8),
 }
 
-fn get_blocks() -> Vec<BlockType> {
-    let csvpath = Path::new("./resources/blocks.csv");
+fn get_biomes() -> Vec<Biome> {
+    let csvpath = Path::new("./resources/biomes.csv");
     let mut reader = Reader::from_path(csvpath).unwrap();
-    let mut blocks = Vec::new();
+    let mut biomes = Vec::new();
     for result in reader.records() {
-        let blocktype = result.unwrap();
-        blocks.push(BlockType {
-            name: blocktype[0].to_string(),
-            color: (
-                blocktype[1].parse().unwrap_or(0),
-                blocktype[2].parse().unwrap_or(0),
-                blocktype[3].parse().unwrap_or(0),
-                blocktype[4].parse().unwrap_or(0),
+        let row = result.unwrap();
+        biomes.push(Biome {
+            id: row[0].parse().unwrap(),
+            // name: row[1].to_string(),
+            // foliage: (
+            //     row[2].parse().unwrap(),
+            //     row[3].parse().unwrap(),
+            //     row[4].parse().unwrap(),
+            // ),
+            grass: (
+                row[5].parse().unwrap(),
+                row[6].parse().unwrap(),
+                row[7].parse().unwrap(),
             ),
-            foliage: blocktype[5] == *"1",
-            grass: blocktype[6] == *"1",
         });
     }
-    blocks
+    biomes
 }
 
-fn is_empty(block: u16) -> bool {
-    block == 0 || block == 14 || block == 98 || block == 563
-}
-
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<BlockType>, cblocks: &[u16], co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], cbiomes: &[u8], biomes: &Vec<Biome>, co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
-            let mut topblock = 0;
-            for by in (0..256).rev() {
-                let bo = by * 256 + bz * 16 + bx;
-                if !is_empty(cblocks[bo]) {
-                    topblock = cblocks[bo];
-                    break;
-                }
+            let bbiome = cbiomes[(bz * 16 + bx) as usize];
+            if let Some(biome) = biomes.iter().find(|b| b.id == bbiome) {
+                let po = (co + bz * width + bx) * 4;
+                pixels[po] = biome.grass.0;
+                pixels[po + 1] = biome.grass.1;
+                pixels[po + 2] = biome.grass.2;
+                pixels[po + 3] = 255;
             }
-            let blocktype = &blocktypes[topblock as usize];
-
-            let po = (co + bz * width + bx) * 4;
-            pixels[po] = blocktype.color.0;
-            pixels[po + 1] = blocktype.color.1;
-            pixels[po + 2] = blocktype.color.2;
-            pixels[po + 3] = blocktype.color.3;
         }
     }
 }
 
-pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
-    println!("Creating block map from world dir {}", worldpath.display());
+#[allow(dead_code)]
+pub fn draw_world_biome_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
+    println!("Creating biome map from world dir {}", worldpath.display());
 
-    let blocktypes = get_blocks();
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
+    let biomes = get_biomes();
 
     let regions = data::read_world_regions(worldpath)?;
     let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
@@ -105,23 +97,21 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     let width = ((max_rx - min_rx + 1) as usize * 32 - (margins.1 + margins.3) as usize) * 16;
     let height = ((max_rz - min_rz + 1) as usize * 32 - (margins.0 + margins.2) as usize) * 16;
 
-    let mut pixels: Vec<u8> = vec![0; width * height * 4];
+    let mut pixels: Vec<u8> = vec![0; (width * height * 4) as usize];
     for (rx, rz) in regions.iter() {
-        println!("Reading block maps for region {}, {}", rx, rz);
+        println!("Reading biome map for region {}, {}", rx, rz);
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
-        let rblockmaps = data::read_region_chunk_block_maps(regionpath.as_path(), &blocknames)?;
+        let rheightmaps = data::read_region_chunk_biomes(regionpath.as_path())?;
 
-        println!("Drawing block maps for region {}, {}", rx, rz);
         let arx = (rx - min_rx) as usize;
         let arz = (rz - min_rz) as usize;
 
-        for ((cx, cz), cblocks) in rblockmaps.iter() {
-            // println!("Drawing chunk {}, {}", cx, cz);
+        for ((cx, cz), cbiomes) in rheightmaps.iter() {
             let acx = arx * 32 + *cx as usize;
             let acz = arz * 32 + *cz as usize;
             let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
+            draw_chunk(&mut pixels, cbiomes, &biomes, &co, &width);
         }
     }
 
@@ -131,34 +121,32 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     Ok(())
 }
 
-pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
-    println!("Creating block map from region file {}", regionpath.display());
+#[allow(dead_code)]
+pub fn draw_region_biome_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
+    println!("Creating biome map from region file {}", regionpath.display());
 
-    let blocktypes = get_blocks();
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
+    let biomes = get_biomes();
 
-    let blockmaps = data::read_region_chunk_block_maps(regionpath, &blocknames)?;
-    if blockmaps.keys().len() == 0 {
+    let rbiomes = data::read_region_chunk_biomes(regionpath)?;
+    if rbiomes.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
-    let min_cx = blockmaps.keys().map(|(x, _)| x).min().unwrap();
-    let max_cx = blockmaps.keys().map(|(x, _)| x).max().unwrap();
-    let min_cz = blockmaps.keys().map(|(_, z)| z).min().unwrap();
-    let max_cz = blockmaps.keys().map(|(_, z)| z).max().unwrap();
+    let min_cx = rbiomes.keys().map(|(x, _)| x).min().unwrap();
+    let max_cx = rbiomes.keys().map(|(x, _)| x).max().unwrap();
+    let min_cz = rbiomes.keys().map(|(_, z)| z).min().unwrap();
+    let max_cz = rbiomes.keys().map(|(_, z)| z).max().unwrap();
     let width = (max_cx - min_cx + 1) as usize * 16;
     let height = (max_cz - min_cz + 1) as usize * 16;
 
     let mut pixels: Vec<u8> = vec![0; width * height * 4];
-
-    for ((cx, cz), cblocks) in blockmaps.iter() {
-        // println!("Drawing chunk {}, {}", cx, cz);
+    for ((cx, cz), cbiomes) in rbiomes.iter() {
         let acx = (cx - min_cx) as usize;
         let acz = (cz - min_cz) as usize;
         let co = acz * 16 * width + acx * 16;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
+        draw_chunk(&mut pixels, cbiomes, &biomes, &co, &width);
     }
 
     let file = File::create(outpath)?;
