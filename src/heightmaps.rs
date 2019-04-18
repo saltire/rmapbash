@@ -5,6 +5,14 @@ use std::path::Path;
 use super::data;
 use super::image;
 
+fn draw_chunk(pixels: &mut [u8], cpixels: &[u8], co: &u32, width: &u32) {
+    for bz in 0..16 {
+        for bx in 0..16 {
+            pixels[(co + bz * width + bx) as usize] = cpixels[(bz * 16 + bx) as usize];
+        }
+    }
+}
+
 #[allow(dead_code)]
 pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating heightmap from world dir {}", worldpath.display());
@@ -60,11 +68,7 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             let acz = arz * 32 + *cz as u32;
             let co = (acz - margins.0 as u32) * 16 * width + (acx - margins.3 as u32) * 16;
 
-            for bz in 0..16 {
-                for bx in 0..16 {
-                    pixels[(co + bz * width + bx) as usize] = cpixels[(bz * 16 + bx) as usize];
-                }
-            }
+            draw_chunk(&mut pixels, cpixels, &co, &width);
         }
     }
 
@@ -97,11 +101,7 @@ pub fn draw_region_heightmap(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         let acz = (cz - min_cz) as u32;
         let co = acz * 16 * width + acx * 16;
 
-        for bz in 0..16 {
-            for bx in 0..16 {
-                pixels[(co + bz * width + bx) as usize] = cpixels[(bz * 16 + bx) as usize] as u8;
-            }
-        }
+        draw_chunk(&mut pixels, cpixels, &co, &width);
     }
 
     let file = File::create(outpath)?;

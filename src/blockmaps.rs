@@ -21,6 +21,26 @@ fn is_empty(block: u16) -> bool {
     block == 0 || block == 14 || block == 98 || block == 563
 }
 
+fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<StringRecord>, cblocks: &[u16], co: &usize, width: &usize) {
+    for bz in 0..16 {
+        for bx in 0..16 {
+            let mut topblock = 0;
+            for by in (0..256).rev() {
+                let bo = by * 256 + bz * 16 + bx;
+                if !is_empty(cblocks[bo]) {
+                    topblock = cblocks[bo];
+                    break;
+                }
+            }
+            let po = co + bz * width + bx;
+            let blocktype = &blocktypes[topblock as usize];
+            for c in 0..4 {
+                pixels[po * 4 + c] = blocktype[c + 1].parse().unwrap_or(0);
+            }
+        }
+    }
+}
+
 pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -80,23 +100,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             let acz = arz * 32 + *cz as usize;
             let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
 
-            for bz in 0..16 {
-                for bx in 0..16 {
-                    let mut topblock = 0;
-                    for by in (0..256).rev() {
-                        let bo = by * 256 + bz * 16 + bx;
-                        if !is_empty(cblocks[bo]) {
-                            topblock = cblocks[bo];
-                            break;
-                        }
-                    }
-                    let po = co + bz * width + bx;
-                    let blocktype = &blocktypes[topblock as usize];
-                    for c in 0..4 {
-                        pixels[po * 4 + c] = blocktype[c + 1].parse().unwrap_or(0);
-                    }
-                }
-            }
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
         }
     }
 
@@ -133,23 +137,7 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         let acz = (cz - min_cz) as usize;
         let co = acz * 16 * width + acx * 16;
 
-        for bz in 0..16 {
-            for bx in 0..16 {
-                let mut topblock = 0;
-                for by in (0..256).rev() {
-                    let bo = by * 256 + bz * 16 + bx;
-                    if !is_empty(cblocks[bo]) {
-                        topblock = cblocks[bo];
-                        break;
-                    }
-                }
-                let po = co + bz * width + bx;
-                let blocktype = &blocktypes[topblock as usize];
-                for c in 0..4 {
-                    pixels[po * 4 + c] = blocktype[c + 1].parse().unwrap_or(0);
-                }
-            }
-        }
+        draw_chunk(&mut pixels, &blocktypes, cblocks, &co, &width);
     }
 
     let file = File::create(outpath)?;
