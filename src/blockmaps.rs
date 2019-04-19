@@ -4,6 +4,7 @@ use std::path::Path;
 
 use super::biometypes;
 use super::blocktypes;
+use super::colors;
 use super::data;
 use super::image;
 
@@ -29,7 +30,11 @@ fn draw_chunk(pixels: &mut [u8],
             let color = if blocktype.foliage || blocktype.grass {
                 let bbiome_id = cbiomes[bz * 16 + bx];
                 if let Some(bbiome) = biometypes.iter().find(|bt| bt.id == bbiome_id) {
-                    if blocktype.foliage { bbiome.foliage } else { bbiome.grass }
+                    if blocktype.foliage {
+                        colors::shade_biome_color(&bbiome.foliage, &blocktype.color)
+                    } else {
+                        colors::shade_biome_color(&bbiome.grass, &blocktype.color)
+                    }
                 } else {
                     blocktype.color
                 }

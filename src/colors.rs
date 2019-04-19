@@ -87,3 +87,14 @@ fn hsv2rgb(hsv: &(f64, f64, f64)) -> (u8, u8, u8) {
 
     ((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
 }
+
+pub fn shade_biome_color(biomecolor: &(u8, u8, u8, u8), blockcolor: &(u8, u8, u8, u8)) -> (u8, u8, u8, u8) {
+    let biome_hsv = rgb2hsv(&(biomecolor.0, biomecolor.1, biomecolor.2));
+    let block_hsv = rgb2hsv(&(blockcolor.0, blockcolor.1, blockcolor.2));
+
+    // use hue/sat from biome color, and val from block color
+    let rgb = hsv2rgb(&(biome_hsv.0, biome_hsv.1, block_hsv.2));
+
+    // use alpha from block color
+    (rgb.0, rgb.1, rgb.2, blockcolor.3)
+}

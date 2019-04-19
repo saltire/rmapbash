@@ -5,6 +5,7 @@ mod biomemaps;
 mod biometypes;
 mod blockmaps;
 mod blocktypes;
+mod colors;
 mod data;
 mod heightmaps;
 mod image;
