@@ -3,6 +3,7 @@ use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes;
+use super::colors;
 use super::data;
 use super::image;
 
@@ -15,21 +16,24 @@ fn draw_chunk(pixels: &mut [u8],
     cblocks: &[u16], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
-            let mut topblock = 0;
+            let mut color = colors::RGBA { r: 0, g: 0, b: 0, a: 0 };
+
             for by in (0..256).rev() {
                 let bo = by * 256 + bz * 16 + bx;
                 if !is_empty(cblocks[bo]) {
-                    topblock = cblocks[bo];
-                    break;
+                    let blocktype = &blocktypes[cblocks[bo] as usize];
+                    let blockcolor = if blocktype.has_biome_colors {
+                        &blocktype.biome_colors[&cbiomes[bz * 16 + bx]]
+                    } else {
+                        &blocktype.color
+                    };
+
+                    color = colors::blend_alpha_color(&color, &blockcolor);
+                    if color.a == 255 {
+                        break;
+                    }
                 }
             }
-            let blocktype = &blocktypes[topblock as usize];
-
-            let color = if blocktype.has_biome_colors {
-                &blocktype.biome_colors[&cbiomes[bz * 16 + bx]]
-            } else {
-                &blocktype.color
-            };
 
             let po = (co + bz * width + bx) * 4;
             pixels[po] = color.r;

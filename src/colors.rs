@@ -124,3 +124,19 @@ pub fn multiply_color(color1: &RGBA, color2: &RGBA) -> RGBA {
         a: color1.a,
     }
 }
+
+pub fn blend_alpha_color(top: &RGBA, bottom: &RGBA) -> RGBA {
+    if top.a == 255 {
+        return RGBA { r: top.r, g: top.g, b: top.b, a: top.a };
+    }
+
+    let talpha = top.a as f64;
+    let balpha = bottom.a as f64 * (255.0 - top.a as f64) / 255.0;
+    let alpha = talpha + balpha;
+    RGBA {
+        r: ((top.r as f64 * talpha + bottom.r as f64 * balpha) / alpha) as u8,
+        g: ((top.g as f64 * talpha + bottom.g as f64 * balpha) / alpha) as u8,
+        b: ((top.b as f64 * talpha + bottom.b as f64 * balpha) / alpha) as u8,
+        a: alpha as u8,
+    }
+}
