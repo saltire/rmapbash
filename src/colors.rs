@@ -105,7 +105,7 @@ fn hsv2rgb (hsv: &HSV) -> RGB {
     RGB { r: (r * 255.0) as u8, g: (g * 255.0) as u8, b: (b * 255.0) as u8 }
 }
 
-pub fn shade_biome_color(biomecolor: &RGBA, blockcolor: &RGBA) -> RGBA {
+pub fn shade_biome_color(blockcolor: &RGBA, biomecolor: &RGBA) -> RGBA {
     let biome_hsv = rgb2hsv(&RGB { r: biomecolor.r, g: biomecolor.g, b: biomecolor.b });
     let block_hsv = rgb2hsv(&RGB { r: blockcolor.r, g: blockcolor.g, b: blockcolor.b });
 
@@ -114,4 +114,13 @@ pub fn shade_biome_color(biomecolor: &RGBA, blockcolor: &RGBA) -> RGBA {
 
     // use alpha from block color
     RGBA { r: rgb.r, g: rgb.g, b: rgb.b, a: blockcolor.a }
+}
+
+pub fn multiply_color(color1: &RGBA, color2: &RGBA) -> RGBA {
+    RGBA {
+        r: (color1.r as u16 * color2.r as u16 / 255) as u8,
+        g: (color1.g as u16 * color2.g as u16 / 255) as u8,
+        b: (color1.b as u16 * color2.b as u16 / 255) as u8,
+        a: color1.a,
+    }
 }

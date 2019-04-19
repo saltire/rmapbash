@@ -10,6 +10,7 @@ pub struct BiomeType {
     // pub name: String,
     pub foliage: RGBA,
     pub grass: RGBA,
+    pub water: RGBA,
 }
 
 pub fn get_biome_types() -> Vec<BiomeType> {
@@ -23,17 +24,23 @@ pub fn get_biome_types() -> Vec<BiomeType> {
             id: row[0].parse().unwrap(),
             // name: row[1].to_string(),
             foliage: RGBA {
-                r: row[2].parse().unwrap(),
-                g: row[3].parse().unwrap(),
-                b: row[4].parse().unwrap(),
+                r: row[2].parse().unwrap_or(0),
+                g: row[3].parse().unwrap_or(0),
+                b: row[4].parse().unwrap_or(0),
                 a: 255,
             },
             grass: RGBA {
-                r: row[5].parse().unwrap(),
-                g: row[6].parse().unwrap(),
-                b: row[7].parse().unwrap(),
+                r: row[5].parse().unwrap_or(0),
+                g: row[6].parse().unwrap_or(0),
+                b: row[7].parse().unwrap_or(0),
                 a: 255,
             },
+            water: RGBA {
+                r: row[8].parse().unwrap_or(255),
+                g: row[8].parse().unwrap_or(255),
+                b: row[8].parse().unwrap_or(255),
+                a: 255,
+            }
         });
     }
     biometypes

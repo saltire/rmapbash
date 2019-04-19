@@ -24,8 +24,7 @@ pub fn get_block_types() -> Vec<BlockType> {
     for result in reader.records() {
         let row = result.unwrap();
 
-        let foliage = row[5] == *"1";
-        let grass = row[5] == *"2";
+        let biome_color_type = row[5].parse().unwrap_or(0);
 
         let mut blocktype = BlockType {
             name: row[0].to_string(),
@@ -35,15 +34,20 @@ pub fn get_block_types() -> Vec<BlockType> {
                 b: row[3].parse().unwrap_or(0),
                 a: row[4].parse().unwrap_or(0),
             },
-            has_biome_colors: foliage || grass,
+            has_biome_colors: biome_color_type > 0,
             biome_colors: HashMap::new(),
         };
 
-        if blocktype.has_biome_colors {
+        if biome_color_type > 0 {
             for biome in &biome_types {
-                blocktype.biome_colors.insert(biome.id, colors::shade_biome_color(
-                    if foliage { &biome.foliage } else { &biome.grass },
-                    &blocktype.color));
+                blocktype.biome_colors.insert(biome.id,
+                    if biome_color_type == 1 {
+                        colors::shade_biome_color(&blocktype.color, &biome.foliage)
+                    } else if biome_color_type == 2 {
+                        colors::shade_biome_color(&blocktype.color, &biome.grass)
+                    } else {
+                        colors::multiply_color(&blocktype.color, &biome.water)
+                    });
             }
         }
 
