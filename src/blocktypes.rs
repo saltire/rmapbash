@@ -16,6 +16,7 @@ struct Row {
     g: Option<u8>,
     b: Option<u8>,
     a: Option<u8>,
+    copy: Option<String>,
     biome: Option<u8>,
 }
 
@@ -33,19 +34,36 @@ pub fn get_block_types() -> Vec<BlockType> {
     let mut reader = Reader::from_path(csvpath).unwrap();
     let mut blocktypes = Vec::new();
 
-    for result in reader.deserialize() {
-        let row: Row = result.unwrap();
+    let rows: Vec<Row> = reader.deserialize().map(|res| res.unwrap()).collect();
 
-        let biome_color_type = row.biome.unwrap_or(0);
+    let mut colors: HashMap<&str, RGBA> = HashMap::new();
 
-        let mut blocktype = BlockType {
-            name: row.name,
-            color: RGBA {
+    for row in &rows {
+        if row.copy.is_none() {
+            colors.insert(&row.name, RGBA {
                 r: row.r.unwrap_or(0),
                 g: row.g.unwrap_or(0),
                 b: row.b.unwrap_or(0),
                 a: row.a.unwrap_or(0),
-            },
+            });
+        }
+    }
+
+    for row in &rows {
+        let biome_color_type = row.biome.unwrap_or(0);
+
+        let mut blocktype = BlockType {
+            name: row.name.to_string(),
+            color: row.copy.clone()
+                .and_then(|c| colors.get(c.as_str()))
+                .map_or_else(
+                    || RGBA {
+                        r: row.r.unwrap_or(0),
+                        g: row.g.unwrap_or(0),
+                        b: row.b.unwrap_or(0),
+                        a: row.a.unwrap_or(0),
+                    },
+                    |c| c.clone()),
             has_biome_colors: biome_color_type > 0,
             biome_colors: HashMap::new(),
         };
