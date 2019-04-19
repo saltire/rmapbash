@@ -3,11 +3,22 @@ use std::path::Path;
 
 use csv::Reader;
 
+use serde::Deserialize;
+
 use super::biometypes;
 use super::colors;
 use super::colors::RGBA;
 
-// #[derive(Debug)]
+#[derive(Deserialize)]
+struct Row {
+    name: String,
+    r: Option<u8>,
+    g: Option<u8>,
+    b: Option<u8>,
+    a: Option<u8>,
+    biome: Option<u8>,
+}
+
 pub struct BlockType {
     pub name: String,
     pub color: RGBA,
@@ -21,18 +32,19 @@ pub fn get_block_types() -> Vec<BlockType> {
     let csvpath = Path::new("./resources/blocks.csv");
     let mut reader = Reader::from_path(csvpath).unwrap();
     let mut blocktypes = Vec::new();
-    for result in reader.records() {
-        let row = result.unwrap();
 
-        let biome_color_type = row[5].parse().unwrap_or(0);
+    for result in reader.deserialize() {
+        let row: Row = result.unwrap();
+
+        let biome_color_type = row.biome.unwrap_or(0);
 
         let mut blocktype = BlockType {
-            name: row[0].to_string(),
+            name: row.name,
             color: RGBA {
-                r: row[1].parse().unwrap_or(0),
-                g: row[2].parse().unwrap_or(0),
-                b: row[3].parse().unwrap_or(0),
-                a: row[4].parse().unwrap_or(0),
+                r: row.r.unwrap_or(0),
+                g: row.g.unwrap_or(0),
+                b: row.b.unwrap_or(0),
+                a: row.a.unwrap_or(0),
             },
             has_biome_colors: biome_color_type > 0,
             biome_colors: HashMap::new(),
@@ -53,5 +65,6 @@ pub fn get_block_types() -> Vec<BlockType> {
 
         blocktypes.push(blocktype);
     }
+
     blocktypes
 }
