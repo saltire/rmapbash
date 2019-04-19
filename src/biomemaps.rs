@@ -13,10 +13,10 @@ fn draw_chunk(pixels: &mut [u8], cbiomes: &[u8], biometypes: &Vec<biometypes::Bi
             let bbiome = cbiomes[(bz * 16 + bx) as usize];
             if let Some(biome) = biometypes.iter().find(|b| b.id == bbiome) {
                 let po = (co + bz * width + bx) * 4;
-                pixels[po] = biome.grass.0;
-                pixels[po + 1] = biome.grass.1;
-                pixels[po + 2] = biome.grass.2;
-                pixels[po + 3] = 255;
+                pixels[po] = biome.grass.r;
+                pixels[po + 1] = biome.grass.g;
+                pixels[po + 2] = biome.grass.b;
+                pixels[po + 3] = biome.grass.a;
             }
         }
     }

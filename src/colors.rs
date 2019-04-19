@@ -1,7 +1,26 @@
-fn rgb2hsv(rgb: &(u8, u8, u8)) -> (f64, f64, f64) {
-    let r: f64 = rgb.0 as f64 / 255.0;
-    let g: f64 = rgb.1 as f64 / 255.0;
-    let b: f64 = rgb.2 as f64 / 255.0;
+pub struct RGBA {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+struct RGB {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+struct HSV {
+    pub h: f64,
+    pub s: f64,
+    pub v: f64,
+}
+
+fn rgb2hsv(rgb: &RGB) -> HSV {
+    let r: f64 = rgb.r as f64 / 255.0;
+    let g: f64 = rgb.g as f64 / 255.0;
+    let b: f64 = rgb.b as f64 / 255.0;
 
     let rgb_min = if g < b {
         if r < g { r } else { g }
@@ -19,12 +38,12 @@ fn rgb2hsv(rgb: &(u8, u8, u8)) -> (f64, f64, f64) {
 
     let v = rgb_max;
     if v == 0.0 { // black
-        return (0.0, 0.0, v);
+        return HSV { h: 0.0, s: 0.0, v };
     }
 
     let s = range / rgb_max;
     if s == 0.0 { // grey
-        return (0.0, s, v);
+        return HSV { h: 0.0, s, v };
     }
 
     let mut h = if r == rgb_max {
@@ -39,62 +58,60 @@ fn rgb2hsv(rgb: &(u8, u8, u8)) -> (f64, f64, f64) {
         h += 360.0;
     }
 
-    (h, s, v)
+    HSV { h, s, v }
 }
 
-fn hsv2rgb(hsv: &(f64, f64, f64)) -> (u8, u8, u8) {
-    let h6 = hsv.0 / 60.0;
-    let s = hsv.1;
-    let v = hsv.2;
+fn hsv2rgb (hsv: &HSV) -> RGB {
+    let h6 = hsv.h / 60.0;
 
-    if s == 0.0 { // grey
-        return (v as u8, v as u8, v as u8);
+    if hsv.s == 0.0 { // grey
+        return RGB { r: hsv.v as u8, g: hsv.v as u8, b: hsv.v as u8 };
     }
 
     let f = h6 % 1.0;
-    let p = v * (1.0 - s);
-    let q = v * (1.0 - s * f);
-    let t = v * (1.0 - s * (1.0 - f));
+    let p = hsv.v * (1.0 - hsv.s);
+    let q = hsv.v * (1.0 - hsv.s * f);
+    let t = hsv.v * (1.0 - hsv.s * (1.0 - f));
 
     let r;
     let g;
     let b;
     if h6 < 1.0 {
-        r = v;
+        r = hsv.v;
         g = t;
         b = p;
     } else if h6 < 2.0 {
         r = q;
-        g = v;
+        g = hsv.v;
         b = p;
     } else if h6 < 3.0 {
         r = p;
-        g = v;
+        g = hsv.v;
         b = t;
     } else if h6 < 4.0 {
         r = p;
         g = q;
-        b = v;
+        b = hsv.v;
     } else if h6 < 5.0 {
         r = t;
         g = p;
-        b = v;
+        b = hsv.v;
     } else {
-        r = v;
+        r = hsv.v;
         g = p;
         b = q;
     }
 
-    ((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8)
+    RGB { r: (r * 255.0) as u8, g: (g * 255.0) as u8, b: (b * 255.0) as u8 }
 }
 
-pub fn shade_biome_color(biomecolor: &(u8, u8, u8, u8), blockcolor: &(u8, u8, u8, u8)) -> (u8, u8, u8, u8) {
-    let biome_hsv = rgb2hsv(&(biomecolor.0, biomecolor.1, biomecolor.2));
-    let block_hsv = rgb2hsv(&(blockcolor.0, blockcolor.1, blockcolor.2));
+pub fn shade_biome_color(biomecolor: &RGBA, blockcolor: &RGBA) -> RGBA {
+    let biome_hsv = rgb2hsv(&RGB { r: biomecolor.r, g: biomecolor.g, b: biomecolor.b });
+    let block_hsv = rgb2hsv(&RGB { r: blockcolor.r, g: blockcolor.g, b: blockcolor.b });
 
     // use hue/sat from biome color, and val from block color
-    let rgb = hsv2rgb(&(biome_hsv.0, biome_hsv.1, block_hsv.2));
+    let rgb = hsv2rgb(&HSV { h: biome_hsv.h, s: biome_hsv.s, v: block_hsv.v });
 
     // use alpha from block color
-    (rgb.0, rgb.1, rgb.2, blockcolor.3)
+    RGBA { r: rgb.r, g: rgb.g, b: rgb.b, a: blockcolor.a }
 }
