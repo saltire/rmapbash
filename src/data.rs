@@ -170,15 +170,16 @@ pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 25
 
     for cz in 0..32 {
         for cx in 0..32 {
-            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
-                let value: serde_json::Value = serde_json::to_value(&chunk)?;
+            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+                if nbt::scan_compound_tag(&mut reader, "Level")?.is_none() { continue; }
+                if nbt::scan_compound_tag(&mut reader, "Biomes")?.is_none() { continue; }
 
-                let mut bytes = [0u8; 256];
-                for i in 0..256 {
-                    bytes[i] = value["Level"]["Biomes"][i].as_u64().unwrap_or(0) as u8;
+                let cbiomes_vector = nbt::read_u8_array(&mut reader)?;
+                if cbiomes_vector.len() == 256 {
+                    let mut cbiomes = [0u8; 256];
+                    cbiomes.copy_from_slice(&cbiomes_vector);
+                    biomes.insert((cx as u8, cz as u8), cbiomes);
                 }
-
-                biomes.insert((cx as u8, cz as u8), bytes);
             }
         }
     }
@@ -193,9 +194,9 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
     for cz in 0..32 {
         for cx in 0..32 {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
-                nbt::scan_compound_tag(&mut reader, "Level")?;
-                nbt::scan_compound_tag(&mut reader, "Heightmaps")?;
-                nbt::scan_compound_tag(&mut reader, "WORLD_SURFACE")?;
+                if nbt::scan_compound_tag(&mut reader, "Level")?.is_none() { continue; }
+                if nbt::scan_compound_tag(&mut reader, "Heightmaps")?.is_none() { continue; }
+                if nbt::scan_compound_tag(&mut reader, "WORLD_SURFACE")?.is_none() { continue; }
 
                 let longs = nbt::read_long_array(&mut reader)?;
                 let mut bytes = [0u8; 288];

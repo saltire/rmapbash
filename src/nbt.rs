@@ -72,31 +72,39 @@ fn skip_tag_payload<R>(reader: &mut R, id: &u8) -> Result<(), Error> where R: Re
     Ok(())
 }
 
-pub fn scan_compound_tag<R>(reader: &mut R, tag_name: &str) -> Result<(), Error> where R: Read {
+pub fn scan_compound_tag<R>(reader: &mut R, tag_name: &str) -> Result<Option<()>, Error> where R: Read {
     loop {
         let (id, name) = read_tag_header(reader)?;
         // println!("Found subtag: {} {}", id, name);
 
-        if name == tag_name {
-            // println!("Found!");
-            break;
-        }
-
         if id == 0 {
-            return Err(Error::new(ErrorKind::InvalidData, "Not found."));
+            return Ok(None);
         }
         if id > 12 {
             return Err(Error::new(ErrorKind::InvalidData, "Invalid tag id."));
         }
+        if name == tag_name {
+            // println!("Found!");
+            return Ok(Some(()))
+        }
 
         skip_tag_payload(reader, &id)?;
     }
+}
 
-    Ok(())
+pub fn read_u8_array<R>(reader: &mut R) -> Result<Vec<u8>, Error> where R: Read {
+    let len = reader.read_u32::<BigEndian>()? as usize;
+    // println!("Reading {} ints", len);
+    let mut array = vec![0u8; len];
+    for i in 0..len {
+        array[i] = reader.read_u32::<BigEndian>()? as u8;
+    }
+    Ok(array)
 }
 
 pub fn read_long_array<R>(reader: &mut R) -> Result<Vec<u64>, Error> where R: Read {
     let len = reader.read_u32::<BigEndian>()? as usize;
+    // println!("Reading {} longs", len);
     let mut array = vec![0u64; len];
     for i in 0..len {
         array[i] = reader.read_u64::<BigEndian>()?;
