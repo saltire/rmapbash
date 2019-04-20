@@ -9,9 +9,11 @@ use bitreader::BitReader;
 use flate2::read::GzDecoder;
 use flate2::read::ZlibDecoder;
 
-use nbt::Blob;
+use ::nbt::Blob;
 
 use regex::Regex;
+
+use super::nbt;
 
 fn read_u32(file: &mut File) -> Result<u32, Error> {
     let mut buf = [0; 4];
@@ -81,11 +83,30 @@ fn read_region_chunk(file: &mut File, cx: u8, cz: u8) -> Result<Option<Blob>, Er
     if offset > 0 {
         file.seek(SeekFrom::Start(offset as u64))?;
         let size = read_u32(file)? as usize;
-        let data = vec![0u8; size - 1];
         file.seek(SeekFrom::Current(1))?;
 
-        let mut reader = ZlibDecoder::new_with_buf(file, data);
+        let mut reader = ZlibDecoder::new_with_buf(file, vec![0u8; size - 1]);
         Ok(Some(Blob::from_reader(&mut reader)?))
+    }
+    else {
+        Ok(None)
+    }
+}
+
+fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
+-> Result<Option<ZlibDecoder<&mut File>>, Error> {
+    let co = (cz as u64 * 32 + cx as u64) * 4;
+    file.seek(SeekFrom::Start(co))?;
+
+    let offset = (read_u32(file)? >> 8) * 4096;
+    if offset > 0 {
+        file.seek(SeekFrom::Start(offset as u64))?;
+        let size = read_u32(file)? as usize;
+        file.seek(SeekFrom::Current(1))?;
+
+        let mut reader = ZlibDecoder::new_with_buf(file, vec![0u8; size - 1]);
+        nbt::read_tag_header(&mut reader)?;
+        Ok(Some(reader))
     }
     else {
         Ok(None)
@@ -171,16 +192,17 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
 
     for cz in 0..32 {
         for cx in 0..32 {
-            if let Some(chunk) = read_region_chunk(&mut file, cx, cz)? {
-                let value: serde_json::Value = serde_json::to_value(&chunk)?;
-                let longs = &value["Level"]["Heightmaps"]["WORLD_SURFACE"];
+            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+                nbt::scan_compound_tag(&mut reader, "Level")?;
+                nbt::scan_compound_tag(&mut reader, "Heightmaps")?;
+                nbt::scan_compound_tag(&mut reader, "WORLD_SURFACE")?;
 
+                let longs = nbt::read_long_array(&mut reader)?;
                 let mut bytes = [0u8; 288];
                 for i in 0..36 {
-                    if let Some(long) = longs[35 - i].as_i64() {
-                        for b in 0..8 {
-                            bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
-                        }
+                    let long = longs[35 - i];
+                    for b in 0..8 {
+                        bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
                     }
                 }
 

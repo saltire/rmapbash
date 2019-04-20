@@ -9,6 +9,7 @@ mod colors;
 mod data;
 mod heightmaps;
 mod image;
+mod nbt;
 mod tinymaps;
 
 fn main() {
