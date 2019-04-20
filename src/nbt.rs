@@ -19,6 +19,43 @@ pub enum Tag {
     LongArray(Vec<u64>),
 }
 
+impl Tag {
+    pub fn to_u8(&self) -> Result<&u8, Error> {
+        match self {
+            Tag::Byte(byte) => Ok(byte),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid byte tag"))
+        }
+    }
+
+    pub fn to_str(&self) -> Result<&str, Error> {
+        match self {
+            Tag::String(string) => Ok(string),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid string tag"))
+        }
+    }
+
+    pub fn to_list(&self) -> Result<&Vec<Tag>, Error> {
+        match self {
+            Tag::List(vec) => Ok(vec),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid list tag"))
+        }
+    }
+
+    pub fn to_hashmap(&self) -> Result<&HashMap<String, Tag>, Error> {
+        match self {
+            Tag::Compound(map) => Ok(map),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid compound tag"))
+        }
+    }
+
+    pub fn to_long_array(&self) -> Result<&Vec<u64>, Error> {
+        match self {
+            Tag::LongArray(vec) => Ok(vec),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid long array tag"))
+        }
+    }
+}
+
 fn read_string<R>(reader: &mut R) -> Result<String, Error> where R: Read {
     let len = reader.read_u16::<BigEndian>()? as usize;
     Ok(if len == 0 {

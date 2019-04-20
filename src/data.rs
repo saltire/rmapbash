@@ -14,7 +14,6 @@ use ::nbt::Blob;
 use regex::Regex;
 
 use super::nbt;
-use super::nbt::Tag;
 
 fn read_u32(file: &mut File) -> Result<u32, Error> {
     let mut buf = [0; 4];
@@ -115,41 +114,34 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
                         vec!["Y", "Palette", "BlockStates"])?;
+                    let y = section["Y"].to_u8()?;
+                    let palette = section["Palette"].to_list()?;
+                    let states = section["BlockStates"].to_long_array()?;
 
-                    if let Tag::Byte(y) = section["Y"] {
-                        if let Tag::List(palette) = &section["Palette"] {
-                            if let Tag::LongArray(states) = &section["BlockStates"] {
-                                let mut pblocks = Vec::with_capacity(palette.len());
-                                for ptag in palette {
-                                    if let Tag::Compound(pblock) = ptag {
-                                        if let Tag::String(name) = &pblock["Name"] {
-                                            pblocks.push(block_names.iter()
-                                                .position(|b| b == &name).unwrap() as u16);
-                                        }
-                                    }
-                                }
+                    let mut pblocks = Vec::with_capacity(palette.len());
+                    for ptag in palette {
+                        let pblock = ptag.to_hashmap()?;
+                        let name = pblock["Name"].to_str()?;
+                        pblocks.push(block_names.iter().position(|b| b == &name).unwrap() as u16);
+                    }
 
-                                // BlockStates is an array of i64 representing 4096 blocks,
-                                // but we have to check the array length to determine
-                                // the # of bits per block.
-                                let len = states.len();
-                                let mut bytes = vec![0u8; len * 8];
-                                for i in 0..len {
-                                    let long = states[len - i - 1];
-                                    for b in 0..8 {
-                                        bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
-                                    }
-                                }
-
-                                let bits = (len / 64) as u8;
-                                let so = y as usize * 4096;
-
-                                let mut br = BitReader::new(&bytes);
-                                for i in (0..4096).rev() {
-                                    blocks[so + i] = pblocks[br.read_u16(bits).unwrap() as usize];
-                                }
-                            }
+                    // BlockStates is an array of i64 representing 4096 blocks,
+                    // but we have to check the array length to determine the # of bits per block.
+                    let len = states.len();
+                    let mut bytes = vec![0u8; len * 8];
+                    for i in 0..len {
+                        let long = states[len - i - 1];
+                        for b in 0..8 {
+                            bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
                         }
+                    }
+
+                    let bits = (len / 64) as u8;
+                    let so = *y as usize * 4096;
+
+                    let mut br = BitReader::new(&bytes);
+                    for i in (0..4096).rev() {
+                        blocks[so + i] = pblocks[br.read_u16(bits).unwrap() as usize];
                     }
                 }
 
@@ -192,27 +184,25 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
         for cx in 0..32 {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 let root = nbt::read_compound_tag_names(&mut reader, vec!["Level"])?;
-                if let Tag::Compound(level) = &root["Level"] {
-                    if let Tag::Compound(maps) = &level["Heightmaps"] {
-                        if let Tag::LongArray(longs) = &maps["WORLD_SURFACE"] {
-                            let mut bytes = [0u8; 288];
-                            for i in 0..36 {
-                                let long = longs[35 - i];
-                                for b in 0..8 {
-                                    bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
-                                }
-                            }
+                let level = root["Level"].to_hashmap()?;
+                let maps = level["Heightmaps"].to_hashmap()?;
+                let longs = maps["WORLD_SURFACE"].to_long_array()?;
 
-                            let mut br = BitReader::new(&bytes);
-                            let mut heights = [0u8; 256];
-                            for i in (0..256).rev() {
-                                heights[i] = br.read_u16(9).unwrap() as u8;
-                            }
-
-                            heightmaps.insert((cx as u8, cz as u8), heights);
-                        }
+                let mut bytes = [0u8; 288];
+                for i in 0..36 {
+                    let long = longs[35 - i];
+                    for b in 0..8 {
+                        bytes[i * 8 + b] = (long >> ((7 - b) * 8)) as u8;
                     }
                 }
+
+                let mut br = BitReader::new(&bytes);
+                let mut heights = [0u8; 256];
+                for i in (0..256).rev() {
+                    heights[i] = br.read_u16(9).unwrap() as u8;
+                }
+
+                heightmaps.insert((cx as u8, cz as u8), heights);
             }
         }
     }
