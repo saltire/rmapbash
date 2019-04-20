@@ -89,13 +89,13 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 
     let mut pixels: Vec<u8> = vec![0; width * height * 4];
     for (rx, rz) in regions.iter() {
-        println!("Reading block maps for region {}, {}", rx, rz);
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
 
-        let rblocks = data::read_region_chunk_block_maps(regionpath.as_path(), &blocknames)?;
+        println!("Reading blocks for region {}, {}", rx, rz);
+        let rblocks = data::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
         let rbiomes = data::read_region_chunk_biomes(regionpath.as_path())?;
 
-        println!("Drawing block maps for region {}, {}", rx, rz);
+        println!("Drawing block map for region {}, {}", rx, rz);
         let arx = (rx - min_rx) as usize;
         let arz = (rz - min_rz) as usize;
 
@@ -119,17 +119,21 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating block map from region file {}", regionpath.display());
 
+    println!("Getting block types");
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
-    let rblocks = data::read_region_chunk_block_maps(regionpath, &blocknames)?;
+    println!("Reading blocks");
+    let rblocks = data::read_region_chunk_blocks(regionpath, &blocknames)?;
     if rblocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
+    println!("Reading biomes");
     let rbiomes = data::read_region_chunk_biomes(regionpath)?;
 
+    println!("Drawing block map");
     let min_cx = rblocks.keys().map(|(x, _)| x).min().unwrap();
     let max_cx = rblocks.keys().map(|(x, _)| x).max().unwrap();
     let min_cz = rblocks.keys().map(|(_, z)| z).min().unwrap();

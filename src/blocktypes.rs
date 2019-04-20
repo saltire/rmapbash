@@ -53,7 +53,7 @@ pub fn get_block_types() -> Vec<BlockType> {
         let biome_color_type = row.biome.unwrap_or(0);
 
         let mut blocktype = BlockType {
-            name: row.name.to_string(),
+            name: format!("minecraft:{}", row.name),
             color: row.copy.clone()
                 .and_then(|c| colors.get(c.as_str()))
                 .map_or_else(

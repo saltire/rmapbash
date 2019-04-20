@@ -6,7 +6,7 @@ use png::HasParameters;
 pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
 -> Result<(), png::EncodingError> {
     let size = (width * height) as usize;
-    println!("Drawing map of size {}x{} ({} bytes)", width, height, size);
+    println!("Saving map of size {}x{} ({} bytes)", width, height, size);
 
     let mut data: Vec<u8> = vec![0; size];
     pixels.iter().enumerate().filter(|(_, v)| **v).for_each(|(i, _)| {
@@ -28,7 +28,7 @@ pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
 pub fn draw_block_map(pixels: &[u8], width: usize, height: usize, file: File, color: bool)
 -> Result<(), png::EncodingError> {
     let size = width * height;
-    println!("Drawing map of size {}x{} ({} bytes)", width, height, size);
+    println!("Saving map of size {}x{} ({} bytes)", width, height, size);
 
     let ref mut w = BufWriter::new(file);
     let mut encoder = png::Encoder::new(w, width as u32, height as u32);
