@@ -1,5 +1,6 @@
 use std::env;
 use std::path::Path;
+use std::time::Instant;
 
 mod biomemaps;
 mod biometypes;
@@ -34,6 +35,8 @@ fn main() {
                 std::fs::create_dir_all(outdir).unwrap();
                 let outpath = outdir.join(format!("{}.png", mode));
 
+                let start = Instant::now();
+
                 let result = match mode {
                     // "region" => biomemaps::draw_region_biome_map(inpath, outpath.as_path()),
                     "region" => blockmaps::draw_region_block_map(inpath, outpath.as_path()),
@@ -44,6 +47,12 @@ fn main() {
                     // _ => heightmaps::draw_world_heightmap(inpath, outpath.as_path()),
                     // _ => tinymaps::draw_world_chunk_map(inpath, outpath.as_path()),
                 };
+
+                let elapsed = start.elapsed();
+                let mins = elapsed.as_secs() / 60;
+                let secs = elapsed.as_secs() % 60;
+                let ms = elapsed.subsec_millis();
+                println!("Time elapsed: {}:{:02}.{:03}", mins, secs, ms);
 
                 match result {
                     Ok(()) => println!("Saved map to {}", outpath.display()),
