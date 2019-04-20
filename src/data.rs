@@ -163,12 +163,12 @@ pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 25
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_none() { continue; }
                 if nbt::seek_compound_tag_name(&mut reader, "Biomes")?.is_none() { continue; }
 
+                let mut cbiomes = [0u8; 256];
                 let cbiomes_vector = nbt::read_u8_array(&mut reader)?;
                 if cbiomes_vector.len() == 256 {
-                    let mut cbiomes = [0u8; 256];
                     cbiomes.copy_from_slice(&cbiomes_vector);
-                    biomes.insert((cx as u8, cz as u8), cbiomes);
                 }
+                biomes.insert((cx as u8, cz as u8), cbiomes);
             }
         }
     }
