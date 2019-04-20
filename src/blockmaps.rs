@@ -6,13 +6,13 @@ use super::blocktypes;
 use super::colors;
 use super::data;
 use super::image;
+use super::world;
 
 fn is_empty(block: u16) -> bool {
     block == 0 || block == 14 || block == 98 || block == 563
 }
 
-fn draw_chunk(pixels: &mut [u8],
-    blocktypes: &Vec<blocktypes::BlockType>,
+fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     cblocks: &[u16], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
@@ -47,48 +47,13 @@ fn draw_chunk(pixels: &mut [u8],
 pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
+    let world = world::get_world(worldpath)?;
+
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
-    let regions = data::read_world_regions(worldpath)?;
-    let min_rx = regions.iter().map(|(x, _)| x).min().unwrap();
-    let max_rx = regions.iter().map(|(x, _)| x).max().unwrap();
-    let min_rz = regions.iter().map(|(_, z)| z).min().unwrap();
-    let max_rz = regions.iter().map(|(_, z)| z).max().unwrap();
-
-    println!("Reading chunk boundaries");
-    let mut margins = (32, 32, 32, 32);
-    for (rx, rz) in regions.iter() {
-        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
-        if rx == min_rx || rx == max_rx || rz == min_rz || rz == max_rz {
-            let chunks = data::read_region_chunk_coords(regionpath.as_path())?;
-            if chunks.len() == 0 {
-                continue;
-            }
-
-            if rz == min_rz {
-                let min_cz = chunks.iter().map(|(_, z)| z).min().unwrap();
-                margins.0 = std::cmp::min(margins.0, *min_cz);
-            }
-            if rx == max_rx {
-                let max_cx = chunks.iter().map(|(x, _)| x).max().unwrap();
-                margins.1 = std::cmp::min(margins.1, 31 - *max_cx);
-            }
-            if rz == max_rz {
-                let max_cz = chunks.iter().map(|(_, z)| z).max().unwrap();
-                margins.2 = std::cmp::min(margins.2, 31 - *max_cz);
-            }
-            if rx == min_rx {
-                let min_cx = chunks.iter().map(|(x, _)| x).min().unwrap();
-                margins.3 = std::cmp::min(margins.3, *min_cx);
-            }
-        }
-    }
-    let width = ((max_rx - min_rx + 1) as usize * 32 - (margins.1 + margins.3) as usize) * 16;
-    let height = ((max_rz - min_rz + 1) as usize * 32 - (margins.0 + margins.2) as usize) * 16;
-
-    let mut pixels: Vec<u8> = vec![0; width * height * 4];
-    for (rx, rz) in regions.iter() {
+    let mut pixels = vec![0u8; world.width * world.height * 4];
+    for (rx, rz) in world.regions.iter() {
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
 
         println!("Reading blocks for region {}, {}", rx, rz);
@@ -96,22 +61,23 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
         let rbiomes = data::read_region_chunk_biomes(regionpath.as_path())?;
 
         println!("Drawing block map for region {}, {}", rx, rz);
-        let arx = (rx - min_rx) as usize;
-        let arz = (rz - min_rz) as usize;
+        let arx = (rx - world.rmin.x) as usize;
+        let arz = (rz - world.rmin.z) as usize;
 
         for (c, cblocks) in rblocks.iter() {
             let (cx, cz) = c;
             // println!("Drawing chunk {}, {}", cx, cz);
             let acx = arx * 32 + *cx as usize;
             let acz = arz * 32 + *cz as usize;
-            let co = (acz - margins.0 as usize) * 16 * width + (acx - margins.3 as usize) * 16;
+            let co = (acz - world.margins.n as usize) * 16 * world.width +
+                (acx - world.margins.w as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &width);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &world.width);
         }
     }
 
     let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, width, height, file, true)?;
+    image::draw_block_map(&pixels, world.width, world.height, file, true)?;
 
     Ok(())
 }
@@ -134,20 +100,22 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     let rbiomes = data::read_region_chunk_biomes(regionpath)?;
 
     println!("Drawing block map");
-    let min_cx = rblocks.keys().map(|(x, _)| x).min().unwrap();
-    let max_cx = rblocks.keys().map(|(x, _)| x).max().unwrap();
-    let min_cz = rblocks.keys().map(|(_, z)| z).min().unwrap();
-    let max_cz = rblocks.keys().map(|(_, z)| z).max().unwrap();
-    let width = (max_cx - min_cx + 1) as usize * 16;
-    let height = (max_cz - min_cz + 1) as usize * 16;
+    let climits = world::Edges {
+        n: rblocks.keys().map(|(_, z)| z).min().unwrap(),
+        e: rblocks.keys().map(|(x, _)| x).max().unwrap(),
+        s: rblocks.keys().map(|(_, z)| z).max().unwrap(),
+        w: rblocks.keys().map(|(x, _)| x).min().unwrap(),
+    };
+    let width = (climits.e - climits.w + 1) as usize * 16;
+    let height = (climits.s - climits.n + 1) as usize * 16;
 
-    let mut pixels: Vec<u8> = vec![0; width * height * 4];
+    let mut pixels = vec![0u8; width * height * 4];
 
     for (c, cblocks) in rblocks.iter() {
         let (cx, cz) = c;
         // println!("Drawing chunk {}, {}", cx, cz);
-        let acx = (cx - min_cx) as usize;
-        let acz = (cz - min_cz) as usize;
+        let acx = (cx - climits.w) as usize;
+        let acz = (cz - climits.n) as usize;
         let co = acz * 16 * width + acx * 16;
 
         draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &width);

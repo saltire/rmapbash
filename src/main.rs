@@ -12,6 +12,7 @@ mod heightmaps;
 mod image;
 mod nbt;
 mod tinymaps;
+mod world;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
