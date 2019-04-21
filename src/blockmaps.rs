@@ -4,8 +4,8 @@ use std::path::Path;
 
 use super::blocktypes;
 use super::colors;
-use super::data;
 use super::image;
+use super::region;
 use super::world;
 
 fn is_empty(block: u16) -> bool {
@@ -57,8 +57,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
 
         println!("Reading blocks for region {}, {}", rx, rz);
-        let rblocks = data::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
-        let rbiomes = data::read_region_chunk_biomes(regionpath.as_path())?;
+        let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
+        let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
         println!("Drawing block map for region {}, {}", rx, rz);
         let arx = (rx - world.rmin.x) as usize;
@@ -90,14 +90,14 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading blocks");
-    let rblocks = data::read_region_chunk_blocks(regionpath, &blocknames)?;
+    let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
     if rblocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
     println!("Reading biomes");
-    let rbiomes = data::read_region_chunk_biomes(regionpath)?;
+    let rbiomes = region::read_region_chunk_biomes(regionpath)?;
 
     println!("Drawing block map");
     let climits = world::Edges {

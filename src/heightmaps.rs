@@ -2,8 +2,8 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use super::data;
 use super::image;
+use super::region;
 use super::world;
 
 fn draw_chunk(pixels: &mut [u8], cpixels: &[u8], co: &usize, width: &usize) {
@@ -24,7 +24,7 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     for (rx, rz) in world.regions.iter() {
         println!("Reading heightmap for region {}, {}", rx, rz);
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
-        let rheightmaps = data::read_region_chunk_heightmaps(regionpath.as_path())?;
+        let rheightmaps = region::read_region_chunk_heightmaps(regionpath.as_path())?;
 
         let arx = (rx - world.rmin.x) as usize;
         let arz = (rz - world.rmin.z) as usize;
@@ -49,7 +49,7 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 pub fn draw_region_heightmap(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
     println!("Creating heightmap from region file {}", regionpath.display());
 
-    let heightmaps = data::read_region_chunk_heightmaps(regionpath)?;
+    let heightmaps = region::read_region_chunk_heightmaps(regionpath)?;
     if heightmaps.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());

@@ -10,6 +10,7 @@ mod data;
 mod heightmaps;
 mod image;
 mod nbt;
+mod region;
 mod tinymaps;
 mod world;
 

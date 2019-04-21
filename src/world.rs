@@ -1,7 +1,9 @@
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::path::Path;
 
-use super::data;
+use regex::Regex;
+
+use super::region;
 
 pub struct Coords<T> {
     pub x: T,
@@ -23,8 +25,34 @@ pub struct World {
     pub margins: Edges<u8>,
 }
 
+pub fn read_world_regions(path: &Path) -> Result<Vec<(i32, i32)>, Error> {
+    if !path.is_dir() {
+        return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
+    }
+
+    let region_path = path.join("region");
+    if !region_path.is_dir() {
+        return Err(Error::new(ErrorKind::NotFound, "No region subdirectory found in path."));
+    }
+
+    let mut regions = Vec::new();
+    let re = Regex::new(r"^r\.([-\d]+)\.([-\d]+)\.mca$").unwrap();
+
+    for entry in std::fs::read_dir(region_path)? {
+        if let Some(filename) = entry?.file_name().to_str() {
+            if let Some(caps) = re.captures(filename) {
+                let rx = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
+                let rz = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
+                regions.push((rx, rz));
+            }
+        }
+    }
+
+    Ok(regions)
+}
+
 pub fn get_world(worldpath: &Path) -> Result<World, Error> {
-    let regions = data::read_world_regions(worldpath)?;
+    let regions = read_world_regions(worldpath)?;
 
     let rlimits = Edges {
         n: *regions.iter().map(|(_, z)| z).min().unwrap(),
@@ -38,7 +66,7 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
     for (rx, rz) in regions.iter() {
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
         if rx == &rlimits.w || rx == &rlimits.e || rz == &rlimits.n || rz == &rlimits.s {
-            let chunks = data::read_region_chunk_coords(regionpath.as_path())?;
+            let chunks = region::read_region_chunk_coords(regionpath.as_path())?;
             if chunks.len() == 0 {
                 continue;
             }
