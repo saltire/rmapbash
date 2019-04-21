@@ -14,7 +14,7 @@ fn is_empty(block: u16) -> bool {
 }
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize) {
+    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
     for bz in 0..16 {
         for bx in 0..16 {
             let bo2 = bz * 16 + bx;
@@ -34,10 +34,11 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                         continue;
                     }
 
-                    color = match by {
-                        255 => color::blend_alpha_color(&color, &blockcolor),
-                        _ => color::blend_alpha_color(&color,
+                    color = if *night && by < 255 {
+                        color::blend_alpha_color(&color,
                             &color::set_light_level(&blockcolor, &clights[bo3 + 256]))
+                    } else {
+                        color::blend_alpha_color(&color, &blockcolor)
                     };
 
                     if color.a == 255 {
@@ -55,7 +56,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     }
 }
 
-pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
+pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
+-> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
     let world = world::get_world(worldpath)?;
@@ -84,7 +86,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             let co = (acz - world.margins.n as usize) * 16 * world.size.x +
                 (acx - world.margins.w as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &world.size.x);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co,
+                &world.size.x, &night);
         }
     }
 
@@ -94,7 +97,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     Ok(())
 }
 
-pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Box<Error>> {
+pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
+-> Result<(), Box<Error>> {
     println!("Creating block map from region file {}", regionpath.display());
 
     println!("Getting block types");
@@ -134,7 +138,8 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         let acz = (c.z - climits.n) as usize;
         let co = acz * 16 * size.x + acx * 16;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
+        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
+            &night);
     }
 
     let file = File::create(outpath)?;
