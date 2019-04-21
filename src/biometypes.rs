@@ -4,7 +4,7 @@ use csv::Reader;
 
 use serde::Deserialize;
 
-use super::colors::RGBA;
+use super::color::RGBA;
 
 #[derive(Deserialize)]
 struct Row {

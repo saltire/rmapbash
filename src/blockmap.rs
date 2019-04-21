@@ -3,7 +3,7 @@ use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes;
-use super::colors;
+use super::color;
 use super::image;
 use super::region;
 use super::world;
@@ -16,7 +16,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     cblocks: &[u16], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
-            let mut color = colors::RGBA { r: 0, g: 0, b: 0, a: 0 };
+            let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
             for by in (0..256).rev() {
                 let bo = by * 256 + bz * 16 + bx;
@@ -28,7 +28,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                         &blocktype.color
                     };
 
-                    color = colors::blend_alpha_color(&color, &blockcolor);
+                    color = color::blend_alpha_color(&color, &blockcolor);
                     if color.a == 255 {
                         break;
                     }

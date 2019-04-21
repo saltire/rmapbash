@@ -6,8 +6,8 @@ use csv::Reader;
 use serde::Deserialize;
 
 use super::biometypes;
-use super::colors;
-use super::colors::RGBA;
+use super::color;
+use super::color::RGBA;
 
 #[derive(Deserialize)]
 struct Row {
@@ -72,11 +72,11 @@ pub fn get_block_types() -> Vec<BlockType> {
             for biome in &biome_types {
                 blocktype.biome_colors.insert(biome.id,
                     if biome_color_type == 1 {
-                        colors::shade_biome_color(&blocktype.color, &biome.foliage)
+                        color::shade_biome_color(&blocktype.color, &biome.foliage)
                     } else if biome_color_type == 2 {
-                        colors::shade_biome_color(&blocktype.color, &biome.grass)
+                        color::shade_biome_color(&blocktype.color, &biome.grass)
                     } else {
-                        colors::multiply_color(&blocktype.color, &biome.water)
+                        color::multiply_color(&blocktype.color, &biome.water)
                     });
             }
         }

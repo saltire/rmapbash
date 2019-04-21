@@ -3,15 +3,15 @@ use std::path::Path;
 use std::time::Instant;
 
 mod biometypes;
-mod blockmaps;
+mod blockmap;
 mod blocktypes;
-mod colors;
+mod color;
 mod data;
-mod heightmaps;
+mod heightmap;
 mod image;
 mod nbt;
 mod region;
-mod tinymaps;
+mod tinymap;
 mod world;
 
 fn main() {
@@ -39,12 +39,12 @@ fn main() {
                 let start = Instant::now();
 
                 let result = match mode {
-                    "region" => blockmaps::draw_region_block_map(inpath, outpath.as_path()),
-                    // "region" => heightmaps::draw_region_heightmap(inpath, outpath.as_path()),
-                    // "region" => tinymaps::draw_region_chunk_map(inpath, outpath.as_path()),
-                    _ => blockmaps::draw_world_block_map(inpath, outpath.as_path()),
-                    // _ => heightmaps::draw_world_heightmap(inpath, outpath.as_path()),
-                    // _ => tinymaps::draw_world_chunk_map(inpath, outpath.as_path()),
+                    "region" => blockmap::draw_region_block_map(inpath, outpath.as_path()),
+                    // "region" => heightmap::draw_region_heightmap(inpath, outpath.as_path()),
+                    // "region" => tinymap::draw_region_chunk_map(inpath, outpath.as_path()),
+                    _ => blockmap::draw_world_block_map(inpath, outpath.as_path()),
+                    // _ => heightmap::draw_world_heightmap(inpath, outpath.as_path()),
+                    // _ => tinymap::draw_world_chunk_map(inpath, outpath.as_path()),
                 };
 
                 let elapsed = start.elapsed();
