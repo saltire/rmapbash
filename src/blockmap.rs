@@ -6,6 +6,7 @@ use super::blocktypes;
 use super::color;
 use super::image;
 use super::region;
+use super::types::{Edges, Pair};
 use super::world;
 
 fn is_empty(block: u16) -> bool {
@@ -52,32 +53,31 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
-    let mut pixels = vec![0u8; world.width * world.height * 4];
-    for (rx, rz) in world.regions.iter() {
-        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", rx, rz));
+    let mut pixels = vec![0u8; world.size.x * world.size.z * 4];
+    for r in world.regions.iter() {
+        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
 
-        println!("Reading blocks for region {}, {}", rx, rz);
+        println!("Reading blocks for region {}, {}", r.x, r.z);
         let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
         let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
-        println!("Drawing block map for region {}, {}", rx, rz);
-        let arx = (rx - world.rmin.x) as usize;
-        let arz = (rz - world.rmin.z) as usize;
+        println!("Drawing block map for region {}, {}", r.x, r.z);
+        let arx = (r.x - world.rmin.x) as usize;
+        let arz = (r.z - world.rmin.z) as usize;
 
         for (c, cblocks) in rblocks.iter() {
-            let (cx, cz) = c;
-            // println!("Drawing chunk {}, {}", cx, cz);
-            let acx = arx * 32 + *cx as usize;
-            let acz = arz * 32 + *cz as usize;
-            let co = (acz - world.margins.n as usize) * 16 * world.width +
+            // println!("Drawing chunk {}, {}", c.x, c.z);
+            let acx = arx * 32 + c.x as usize;
+            let acz = arz * 32 + c.z as usize;
+            let co = (acz - world.margins.n as usize) * 16 * world.size.x +
                 (acx - world.margins.w as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &world.width);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &world.size.x);
         }
     }
 
     let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, world.width, world.height, file, true)?;
+    image::draw_block_map(&pixels, world.size, file, true)?;
 
     Ok(())
 }
@@ -100,29 +100,30 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     let rbiomes = region::read_region_chunk_biomes(regionpath)?;
 
     println!("Drawing block map");
-    let climits = world::Edges {
-        n: rblocks.keys().map(|(_, z)| z).min().unwrap(),
-        e: rblocks.keys().map(|(x, _)| x).max().unwrap(),
-        s: rblocks.keys().map(|(_, z)| z).max().unwrap(),
-        w: rblocks.keys().map(|(x, _)| x).min().unwrap(),
+    let climits = Edges {
+        n: rblocks.keys().map(|c| c.z).min().unwrap(),
+        e: rblocks.keys().map(|c| c.x).max().unwrap(),
+        s: rblocks.keys().map(|c| c.z).max().unwrap(),
+        w: rblocks.keys().map(|c| c.x).min().unwrap(),
     };
-    let width = (climits.e - climits.w + 1) as usize * 16;
-    let height = (climits.s - climits.n + 1) as usize * 16;
+    let size = Pair {
+        x: (climits.e - climits.w + 1) as usize * 16,
+        z: (climits.s - climits.n + 1) as usize * 16,
+    };
 
-    let mut pixels = vec![0u8; width * height * 4];
+    let mut pixels = vec![0u8; size.x * size.z * 4];
 
     for (c, cblocks) in rblocks.iter() {
-        let (cx, cz) = c;
-        // println!("Drawing chunk {}, {}", cx, cz);
-        let acx = (cx - climits.w) as usize;
-        let acz = (cz - climits.n) as usize;
-        let co = acz * 16 * width + acx * 16;
+        // println!("Drawing chunk {}, {}", c.x, c.z);
+        let acx = (c.x - climits.w) as usize;
+        let acz = (c.z - climits.n) as usize;
+        let co = acz * 16 * size.x + acx * 16;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &width);
+        draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &size.x);
     }
 
     let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, width, height, file, true)?;
+    image::draw_block_map(&pixels, size, file, true)?;
 
     Ok(())
 }

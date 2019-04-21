@@ -3,18 +3,20 @@ use std::io::BufWriter;
 
 use png::HasParameters;
 
-pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
--> Result<(), png::EncodingError> {
-    let size = (width * height) as usize;
-    println!("Saving map of size {}x{} ({} bytes)", width, height, size);
+use super::types::Pair;
 
-    let mut data: Vec<u8> = vec![0; size];
+pub fn draw_tiny_map(pixels: &[bool], size: Pair<usize>, file: File)
+-> Result<(), png::EncodingError> {
+    let len = size.x * size.z;
+    println!("Saving map of size {}x{} ({} bytes)", size.x, size.z, len);
+
+    let mut data: Vec<u8> = vec![0; len];
     pixels.iter().enumerate().filter(|(_, v)| **v).for_each(|(i, _)| {
         data[i as usize] = 255;
     });
 
     let ref mut w = BufWriter::new(file);
-    let mut encoder = png::Encoder::new(w, width, height);
+    let mut encoder = png::Encoder::new(w, size.x as u32, size.z as u32);
     encoder
         .set(png::ColorType::Grayscale)
         .set(png::BitDepth::Eight);
@@ -25,13 +27,13 @@ pub fn draw_tiny_map(pixels: &[bool], width: u32, height: u32, file: File)
     Ok(())
 }
 
-pub fn draw_block_map(pixels: &[u8], width: usize, height: usize, file: File, color: bool)
+pub fn draw_block_map(pixels: &[u8], size: Pair<usize>, file: File, color: bool)
 -> Result<(), png::EncodingError> {
-    let size = width * height;
-    println!("Saving map of size {}x{} ({} bytes)", width, height, size);
+    let len = size.x * size.z;
+    println!("Saving map of size {}x{} ({} bytes)", size.x, size.z, len);
 
     let ref mut w = BufWriter::new(file);
-    let mut encoder = png::Encoder::new(w, width as u32, height as u32);
+    let mut encoder = png::Encoder::new(w, size.x as u32, size.z as u32);
     encoder
         .set(if color { png::ColorType::RGBA } else { png::ColorType::Grayscale })
         .set(png::BitDepth::Eight);

@@ -11,6 +11,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 
 use super::nbt;
+use super::types::Pair;
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     let mut file = File::open(path)?;
@@ -25,14 +26,14 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; 1024], Error> {
     Ok(chunks)
 }
 
-pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<(u8, u8)>, Error> {
+pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<Pair<u8>>, Error> {
     let mut file = File::open(path)?;
-    let mut chunks: Vec<(u8, u8)> = vec![];
+    let mut chunks = vec![];
 
     for cz in 0..32 {
         for cx in 0..32 {
             if file.read_u32::<BigEndian>()? > 0 {
-                chunks.push((cx, cz));
+                chunks.push(Pair { x: cx, z: cz });
             }
         }
     }
@@ -61,7 +62,7 @@ fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
 }
 
 pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
--> Result<HashMap<(u8, u8), [u16; 65536]>, Error> {
+-> Result<HashMap<Pair<u8>, [u16; 65536]>, Error> {
     let mut file = File::open(path)?;
     let mut blockmaps = HashMap::new();
 
@@ -110,7 +111,7 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
                     }
                 }
 
-                blockmaps.insert((cx as u8, cz as u8), blocks);
+                blockmaps.insert(Pair { x: cx as u8, z: cz as u8 }, blocks);
             }
         }
     }
@@ -118,7 +119,7 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
     Ok(blockmaps)
 }
 
-pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
+pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<Pair<u8>, [u8; 256]>, Error> {
     let mut file = File::open(path)?;
     let mut biomes = HashMap::new();
 
@@ -133,7 +134,7 @@ pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 25
                 if cbiomes_vector.len() == 256 {
                     cbiomes.copy_from_slice(&cbiomes_vector);
                 }
-                biomes.insert((cx as u8, cz as u8), cbiomes);
+                biomes.insert(Pair { x: cx as u8, z: cz as u8 }, cbiomes);
             }
         }
     }
@@ -141,7 +142,7 @@ pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<(u8, u8), [u8; 25
     Ok(biomes)
 }
 
-pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8; 256]>, Error> {
+pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<Pair<u8>, [u8; 256]>, Error> {
     let mut file = File::open(path)?;
     let mut heightmaps = HashMap::new();
 
@@ -167,7 +168,7 @@ pub fn read_region_chunk_heightmaps(path: &Path) -> Result<HashMap<(u8, u8), [u8
                     heights[i] = br.read_u16(9).unwrap() as u8;
                 }
 
-                heightmaps.insert((cx as u8, cz as u8), heights);
+                heightmaps.insert(Pair { x: cx as u8, z: cz as u8 }, heights);
             }
         }
     }

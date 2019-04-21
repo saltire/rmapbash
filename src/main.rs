@@ -12,6 +12,7 @@ mod image;
 mod nbt;
 mod region;
 mod tinymap;
+mod types;
 mod world;
 
 fn main() {
