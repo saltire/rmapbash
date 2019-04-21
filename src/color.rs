@@ -18,6 +18,9 @@ struct HSV {
     pub v: f64,
 }
 
+const BLOCKLIGHT_MIN: f64 = 0.17;
+const BLOCKLIGHT_MULT: f64 = 1.0 - BLOCKLIGHT_MIN;
+
 fn rgb2hsv(rgb: &RGB) -> HSV {
     let r: f64 = rgb.r as f64 / 255.0;
     let g: f64 = rgb.g as f64 / 255.0;
@@ -139,5 +142,15 @@ pub fn blend_alpha_color(top: &RGBA, bottom: &RGBA) -> RGBA {
         g: ((top.g as f64 * talpha + bottom.g as f64 * balpha) / alpha) as u8,
         b: ((top.b as f64 * talpha + bottom.b as f64 * balpha) / alpha) as u8,
         a: alpha as u8,
+    }
+}
+
+pub fn set_light_level(color: &RGBA, level: &u8) -> RGBA {
+    let llevel = *level as f64 * BLOCKLIGHT_MULT / 15.0 + BLOCKLIGHT_MIN;
+    RGBA {
+        r: (color.r as f64 * llevel) as u8,
+        g: (color.g as f64 * llevel) as u8,
+        b: (color.b as f64 * llevel) as u8,
+        a: color.a,
     }
 }

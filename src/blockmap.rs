@@ -14,22 +14,32 @@ fn is_empty(block: u16) -> bool {
 }
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    cblocks: &[u16], cbiomes: &[u8], co: &usize, width: &usize) {
+    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..16 {
         for bx in 0..16 {
+            let bo2 = bz * 16 + bx;
             let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
             for by in (0..256).rev() {
-                let bo = by * 256 + bz * 16 + bx;
-                if !is_empty(cblocks[bo]) {
-                    let blocktype = &blocktypes[cblocks[bo] as usize];
+                let bo3 = by * 256 + bo2;
+                if !is_empty(cblocks[bo3]) {
+                    let blocktype = &blocktypes[cblocks[bo3] as usize];
                     let blockcolor = if blocktype.has_biome_colors {
-                        &blocktype.biome_colors[&cbiomes[bz * 16 + bx]]
+                        &blocktype.biome_colors[&cbiomes[bo2]]
                     } else {
                         &blocktype.color
                     };
 
-                    color = color::blend_alpha_color(&color, &blockcolor);
+                    if blockcolor.a == 0 {
+                        continue;
+                    }
+
+                    color = match by {
+                        255 => color::blend_alpha_color(&color, &blockcolor),
+                        _ => color::blend_alpha_color(&color,
+                            &color::set_light_level(&blockcolor, &clights[bo3 + 256]))
+                    };
+
                     if color.a == 255 {
                         break;
                     }
@@ -55,11 +65,13 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 
     let mut pixels = vec![0u8; world.size.x * world.size.z * 4];
     for r in world.regions.iter() {
-        let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
+        let regionpath_str = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
+        let regionpath = regionpath_str.as_path();
 
         println!("Reading blocks for region {}, {}", r.x, r.z);
-        let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
-        let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
+        let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
+        let rlights = region::read_region_chunk_lightmaps(regionpath)?;
+        let rbiomes = region::read_region_chunk_biomes(regionpath)?;
 
         println!("Drawing block map for region {}, {}", r.x, r.z);
         let arx = (r.x - world.rmin.x) as usize;
@@ -72,7 +84,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
             let co = (acz - world.margins.n as usize) * 16 * world.size.x +
                 (acx - world.margins.w as usize) * 16;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &world.size.x);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &world.size.x);
         }
     }
 
@@ -95,6 +107,9 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         println!("No chunks in region.");
         return Ok(());
     }
+
+    println!("Reading light maps");
+    let rlights = region::read_region_chunk_lightmaps(regionpath)?;
 
     println!("Reading biomes");
     let rbiomes = region::read_region_chunk_biomes(regionpath)?;
@@ -119,7 +134,7 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
         let acz = (c.z - climits.n) as usize;
         let co = acz * 16 * size.x + acx * 16;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &rbiomes[c], &co, &size.x);
+        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
     }
 
     let file = File::create(outpath)?;

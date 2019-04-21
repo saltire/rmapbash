@@ -27,6 +27,13 @@ impl Tag {
         }
     }
 
+    pub fn to_u8_array(&self) -> Result<&Vec<u8>, Error> {
+        match self {
+            Tag::ByteArray(array) => Ok(array),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid byte array tag"))
+        }
+    }
+
     pub fn to_str(&self) -> Result<&str, Error> {
         match self {
             Tag::String(string) => Ok(string),

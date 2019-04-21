@@ -119,6 +119,42 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
     Ok(blockmaps)
 }
 
+pub fn read_region_chunk_lightmaps(path: &Path) -> Result<HashMap<Pair<u8>, [u8; 65536]>, Error> {
+    let mut file = File::open(path)?;
+    let mut lightmaps = HashMap::new();
+
+    for cz in 0..32 {
+        for cx in 0..32 {
+            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+                // println!("Reading chunk {}, {}", cx, cz);
+
+                if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_none() { continue; }
+                if nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_none() { continue; }
+                let slen = nbt::read_list_length(&mut reader)?;
+
+                let mut lights = [0u8; 65536];
+
+                for _ in 0..slen {
+                    let section = nbt::read_compound_tag_names(&mut reader,
+                        vec!["Y", "BlockLight"])?;
+                    let y = section["Y"].to_u8()?;
+                    let bytes = section["BlockLight"].to_u8_array()?;
+                    let so = *y as usize * 4096;
+
+                    for i in 0..2048 {
+                        lights[so + i * 2] = bytes[i] & 0x0f;
+                        lights[so + i * 2 + 1] = bytes[i] >> 4;
+                    }
+                }
+
+                lightmaps.insert(Pair { x: cx as u8, z: cz as u8 }, lights);
+            }
+        }
+    }
+
+    Ok(lightmaps)
+}
+
 pub fn read_region_chunk_biomes(path: &Path) -> Result<HashMap<Pair<u8>, [u8; 256]>, Error> {
     let mut file = File::open(path)?;
     let mut biomes = HashMap::new();
