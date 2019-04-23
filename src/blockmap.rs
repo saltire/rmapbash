@@ -4,6 +4,7 @@ use std::path::Path;
 
 use super::blocktypes;
 use super::color;
+use super::sizes::*;
 use super::image;
 use super::region;
 use super::types::{Edges, Pair};
@@ -15,13 +16,13 @@ fn is_empty(block: u16) -> bool {
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
-    for bz in 0..16 {
-        for bx in 0..16 {
-            let bo2 = bz * 16 + bx;
+    for bz in 0..BLOCKS_IN_CHUNK {
+        for bx in 0..BLOCKS_IN_CHUNK {
+            let bo2 = bz * BLOCKS_IN_CHUNK + bx;
             let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
-            for by in (0..256).rev() {
-                let bo3 = by * 256 + bo2;
+            for by in (0..BLOCKS_Y).rev() {
+                let bo3 = by * BLOCKS_Y + bo2;
                 if !is_empty(cblocks[bo3]) {
                     let blocktype = &blocktypes[cblocks[bo3] as usize];
                     let blockcolor = if blocktype.has_biome_colors {
@@ -34,9 +35,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                         continue;
                     }
 
-                    color = if *night && by < 255 {
+                    color = if *night && by < BLOCKS_Y - 1 {
                         color::blend_alpha_color(&color,
-                            &color::set_light_level(&blockcolor, &clights[bo3 + 256]))
+                            &color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_Y]))
                     } else {
                         color::blend_alpha_color(&color, &blockcolor)
                     };
@@ -81,10 +82,10 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 
         for (c, cblocks) in rblocks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = arx * 32 + c.x as usize;
-            let acz = arz * 32 + c.z as usize;
-            let co = (acz - world.margins.n as usize) * 16 * world.size.x +
-                (acx - world.margins.w as usize) * 16;
+            let acx = arx * CHUNKS_IN_REGION + c.x as usize;
+            let acz = arz * CHUNKS_IN_REGION + c.z as usize;
+            let co = ((acz - world.margins.n) * world.size.x + (acx - world.margins.w))
+                * BLOCKS_IN_CHUNK;
 
             draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co,
                 &world.size.x, &night);
@@ -126,8 +127,8 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
         w: rblocks.keys().map(|c| c.x).min().unwrap(),
     };
     let size = Pair {
-        x: (climits.e - climits.w + 1) as usize * 16,
-        z: (climits.s - climits.n + 1) as usize * 16,
+        x: (climits.e - climits.w + 1) as usize * BLOCKS_IN_CHUNK,
+        z: (climits.s - climits.n + 1) as usize * BLOCKS_IN_CHUNK,
     };
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
@@ -136,7 +137,7 @@ pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
         // println!("Drawing chunk {}, {}", c.x, c.z);
         let acx = (c.x - climits.w) as usize;
         let acz = (c.z - climits.n) as usize;
-        let co = acz * 16 * size.x + acx * 16;
+        let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
         draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
             &night);

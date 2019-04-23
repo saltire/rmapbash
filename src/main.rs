@@ -12,6 +12,7 @@ mod heightmap;
 mod image;
 mod nbt;
 mod region;
+mod sizes;
 mod tinymap;
 mod types;
 mod world;

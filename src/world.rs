@@ -3,6 +3,7 @@ use std::path::Path;
 
 use regex::Regex;
 
+use super::sizes::*;
 use super::region;
 use super::types::{Edges, Pair};
 
@@ -10,7 +11,7 @@ pub struct World {
     pub size: Pair<usize>,
     pub regions: Vec<Pair<i32>>,
     pub rmin: Pair<i32>,
-    pub margins: Edges<u8>,
+    pub margins: Edges<usize>,
 }
 
 pub fn read_world_regions(path: &Path) -> Result<Vec<Pair<i32>>, Error> {
@@ -50,7 +51,12 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
     };
 
     println!("Reading chunk boundaries");
-    let mut margins = Edges { n: 32, e: 32, s: 32, w: 32 };
+    let mut margins = Edges {
+        n: CHUNKS_IN_REGION,
+        e: CHUNKS_IN_REGION,
+        s: CHUNKS_IN_REGION,
+        w: CHUNKS_IN_REGION,
+    };
     for r in regions.iter() {
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
         if r.x == rlimits.w || r.x == rlimits.e || r.z == rlimits.n || r.z == rlimits.s {
@@ -60,19 +66,19 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
             }
 
             if r.z == rlimits.n {
-                let min_cz = chunks.iter().map(|c| c.z).min().unwrap();
+                let min_cz = chunks.iter().map(|c| c.z).min().unwrap() as usize;
                 margins.n = std::cmp::min(margins.n, min_cz);
             }
             if r.x == rlimits.e {
-                let max_cx = chunks.iter().map(|c| c.x).max().unwrap();
-                margins.e = std::cmp::min(margins.e, 31 - max_cx);
+                let max_cx = chunks.iter().map(|c| c.x).max().unwrap() as usize;
+                margins.e = std::cmp::min(margins.e, CHUNKS_IN_REGION - max_cx - 1);
             }
             if r.z == rlimits.s {
-                let max_cz = chunks.iter().map(|c| c.z).max().unwrap();
-                margins.s = std::cmp::min(margins.s, 31 - max_cz);
+                let max_cz = chunks.iter().map(|c| c.z).max().unwrap() as usize;
+                margins.s = std::cmp::min(margins.s, CHUNKS_IN_REGION - max_cz - 1);
             }
             if r.x == rlimits.w {
-                let min_cx = chunks.iter().map(|c| c.x).min().unwrap();
+                let min_cx = chunks.iter().map(|c| c.x).min().unwrap() as usize;
                 margins.w = std::cmp::min(margins.w, min_cx);
             }
         }
@@ -80,8 +86,10 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
 
     Ok(World {
         size: Pair {
-            x: ((rlimits.e - rlimits.w + 1) as usize * 32 - (margins.e + margins.w) as usize) * 16,
-            z: ((rlimits.s - rlimits.n + 1) as usize * 32 - (margins.n + margins.s) as usize) * 16,
+            x: ((rlimits.e - rlimits.w + 1) as usize * CHUNKS_IN_REGION - (margins.e + margins.w))
+                * BLOCKS_IN_CHUNK,
+            z: ((rlimits.s - rlimits.n + 1) as usize * CHUNKS_IN_REGION - (margins.n + margins.s))
+                * BLOCKS_IN_CHUNK,
         },
         regions,
         rmin: Pair { x: rlimits.w, z: rlimits.n },

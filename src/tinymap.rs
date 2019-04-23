@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
+use super::sizes::*;
 use super::image;
 use super::region;
 use super::types::Pair;
@@ -23,7 +24,9 @@ pub fn draw_world_region_map(worldpath: &Path, outpath: &Path) -> Result<(), Box
 
     let mut pixels: Vec<bool> = vec![false; size.x * size.z];
     for r in regions.iter() {
-        pixels[((r.z - min_rz) * size.x as i32 + (r.x - min_rx)) as usize] = true;
+        let arx = (r.x - min_rx) as usize;
+        let arz = (r.z - min_rz) as usize;
+        pixels[arz * size.x + arx] = true;
     }
 
     let file = File::create(outpath)?;
@@ -42,8 +45,8 @@ pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
     let min_rz = regions.iter().map(|c| c.z).min().unwrap();
     let max_rz = regions.iter().map(|c| c.z).max().unwrap();
     let size = Pair {
-        x: (max_rx - min_rx + 1) as usize * 32,
-        z: (max_rz - min_rz + 1) as usize * 32,
+        x: (max_rx - min_rx + 1) as usize * CHUNKS_IN_REGION,
+        z: (max_rz - min_rz + 1) as usize * CHUNKS_IN_REGION,
     };
 
     let mut pixels: Vec<bool> = vec![false; size.x * size.z];
@@ -51,12 +54,13 @@ pub fn draw_world_chunk_map(worldpath: &Path, outpath: &Path) -> Result<(), Box<
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
         let regionpixels = region::read_region_chunks(&regionpath)?;
 
-        let ro = (r.z - min_rz) * size.x as i32 * 32 + (r.x - min_rx) * 32;
+        let arx = (r.x - min_rx) as usize;
+        let arz = (r.z - min_rz) as usize;
+        let ro = arz * size.x * CHUNKS_IN_REGION + arx * CHUNKS_IN_REGION;
 
-        for cz in 0..32 {
-            for cx in 0..32 {
-                pixels[(ro + cz * size.x as i32 + cx) as usize] =
-                    regionpixels[(cz * 32 + cx) as usize];
+        for cz in 0..CHUNKS_IN_REGION {
+            for cx in 0..CHUNKS_IN_REGION {
+                pixels[ro + cz * size.x + cx] = regionpixels[cz * CHUNKS_IN_REGION + cx];
             }
         }
     }
@@ -74,7 +78,7 @@ pub fn draw_region_chunk_map(regionpath: &Path, outpath: &Path) -> Result<(), Bo
     let pixels = region::read_region_chunks(regionpath)?;
 
     let file = File::create(outpath)?;
-    image::draw_tiny_map(&pixels, Pair { x: 32, z: 32 }, file)?;
+    image::draw_tiny_map(&pixels, Pair { x: CHUNKS_IN_REGION, z: CHUNKS_IN_REGION }, file)?;
 
     Ok(())
 }
