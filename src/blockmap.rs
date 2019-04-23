@@ -24,22 +24,21 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 }
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
-                let blockcolor = if blocktype.has_biome_colors {
-                    &blocktype.biome_colors[&cbiomes[bo2]]
+
+                let light = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
+                    clights[bo3 + BLOCKS_IN_CHUNK_Y]
                 } else {
-                    &blocktype.color
+                    LIGHT_LEVELS as u8 - 1
                 };
+
+                let blockcolor = &blocktype.colors[
+                    cbiomes[bo2] as usize * LIGHT_LEVELS + light as usize];
+
                 if blockcolor.a == 0 {
                     continue;
                 }
 
-                color = color::blend_alpha_color(&color,
-                    &(if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
-                        color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_IN_CHUNK_Y])
-                    } else {
-                        blockcolor.clone()
-                    }));
-
+                color = color::blend_alpha_color(&color, blockcolor);
                 if color.a == 255 {
                     break;
                 }

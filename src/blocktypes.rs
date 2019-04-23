@@ -8,6 +8,7 @@ use serde::Deserialize;
 use super::biometypes;
 use super::color;
 use super::color::RGBA;
+use super::sizes::*;
 
 #[derive(Deserialize)]
 struct Row {
@@ -22,9 +23,7 @@ struct Row {
 
 pub struct BlockType {
     pub name: String,
-    pub color: RGBA,
-    pub has_biome_colors: bool,
-    pub biome_colors: HashMap<u8, RGBA>,
+    pub colors: [RGBA; BIOME_ARRAY_SIZE * LIGHT_LEVELS],
 }
 
 pub fn get_block_types() -> Vec<BlockType> {
@@ -36,8 +35,9 @@ pub fn get_block_types() -> Vec<BlockType> {
 
     let rows: Vec<Row> = reader.deserialize().map(|res| res.unwrap()).collect();
 
+    // Build a map of explicitly defined colours, indexed by the defining block type,
+    // as a lookup for blocks that reference other blocks' colours.
     let mut colors: HashMap<&str, RGBA> = HashMap::new();
-
     for row in &rows {
         if row.copy.is_none() {
             colors.insert(&row.name, RGBA {
@@ -49,39 +49,41 @@ pub fn get_block_types() -> Vec<BlockType> {
         }
     }
 
+    // Now iterate through all the block types and build their colours.
     for row in &rows {
+        let block_color = row.copy.clone()
+            .and_then(|c| colors.get(c.as_str()))
+            .map_or_else(
+                || RGBA {
+                    r: row.r.unwrap_or(0),
+                    g: row.g.unwrap_or(0),
+                    b: row.b.unwrap_or(0),
+                    a: row.a.unwrap_or(0),
+                },
+                |c| c.clone());
+
         let biome_color_type = row.biome.unwrap_or(0);
 
-        let mut blocktype = BlockType {
-            name: format!("minecraft:{}", row.name),
-            color: row.copy.clone()
-                .and_then(|c| colors.get(c.as_str()))
-                .map_or_else(
-                    || RGBA {
-                        r: row.r.unwrap_or(0),
-                        g: row.g.unwrap_or(0),
-                        b: row.b.unwrap_or(0),
-                        a: row.a.unwrap_or(0),
-                    },
-                    |c| c.clone()),
-            has_biome_colors: biome_color_type > 0,
-            biome_colors: HashMap::new(),
-        };
+        let mut block_colors = [RGBA::default(); BIOME_ARRAY_SIZE * LIGHT_LEVELS];
+        for biome in &biome_types {
+            let biome_color = match biome_color_type {
+                1 => color::shade_biome_color(&block_color, &biome.foliage),
+                2 => color::shade_biome_color(&block_color, &biome.grass),
+                3 => color::multiply_color(&block_color, &biome.water),
+                _ => block_color.clone(),
+            };
 
-        if biome_color_type > 0 {
-            for biome in &biome_types {
-                blocktype.biome_colors.insert(biome.id,
-                    if biome_color_type == 1 {
-                        color::shade_biome_color(&blocktype.color, &biome.foliage)
-                    } else if biome_color_type == 2 {
-                        color::shade_biome_color(&blocktype.color, &biome.grass)
-                    } else {
-                        color::multiply_color(&blocktype.color, &biome.water)
-                    });
+            for ll in 0..LIGHT_LEVELS {
+                block_colors[biome.id as usize * LIGHT_LEVELS + ll] =
+                    color::set_light_level(&biome_color, &(ll as u8));
             }
+
         }
 
-        blocktypes.push(blocktype);
+        blocktypes.push(BlockType {
+            name: format!("minecraft:{}", row.name),
+            colors: block_colors,
+        });
     }
 
     blocktypes

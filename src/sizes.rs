@@ -35,3 +35,7 @@ pub const ISO_CHUNK_Y_MARGIN: usize = ISO_BLOCK_Y_MARGIN * BLOCKS_IN_CHUNK; // 1
 // pub const ISO_REGION_SIDE_HEIGHT: usize = ISO_CHUNK_SIDE_HEIGHT; // 768
 // pub const ISO_REGION_X_MARGIN: usize = ISO_REGION_WIDTH / 2; // 1024
 // pub const ISO_REGION_Y_MARGIN: usize = ISO_CHUNK_Y_MARGIN * CHUNKS_IN_REGION; // 512
+
+
+pub const LIGHT_LEVELS: usize = 16;
+pub const BIOME_ARRAY_SIZE: usize = 170;

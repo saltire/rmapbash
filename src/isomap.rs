@@ -3,7 +3,6 @@ use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes;
-use super::color;
 use super::sizes::*;
 use super::image;
 use super::region;
@@ -34,30 +33,28 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 }
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
-                let blockcolor = if blocktype.has_biome_colors {
-                    &blocktype.biome_colors[&cbiomes[bo2]]
+
+                let light = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
+                    clights[bo3 + BLOCKS_IN_CHUNK_Y]
                 } else {
-                    &blocktype.color
+                    LIGHT_LEVELS as u8 - 1
                 };
+
+                let blockcolor = &blocktype.colors[
+                    cbiomes[bo2] as usize * LIGHT_LEVELS + light as usize];
                 if blockcolor.a == 0 {
                     continue;
                 }
-
-                let color = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
-                    color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_IN_CHUNK_Y])
-                } else {
-                    blockcolor.clone()
-                };
 
                 let bpy = bpy2 + (BLOCKS_IN_CHUNK_Y - by - 1) * ISO_BLOCK_SIDE_HEIGHT;
 
                 for y in 0..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
                         let po = (co + (bpy + y) * width + bpx + x) * 4;
-                        pixels[po] = color.r;
-                        pixels[po + 1] = color.g;
-                        pixels[po + 2] = color.b;
-                        pixels[po + 3] = color.a;
+                        pixels[po] = blockcolor.r;
+                        pixels[po + 1] = blockcolor.g;
+                        pixels[po + 2] = blockcolor.b;
+                        pixels[po + 3] = blockcolor.a;
                     }
                 }
             }
