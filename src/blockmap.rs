@@ -4,9 +4,9 @@ use std::path::Path;
 
 use super::blocktypes;
 use super::color;
-use super::sizes::*;
 use super::image;
 use super::region;
+use super::sizes::*;
 use super::types::{Edges, Pair};
 use super::world;
 

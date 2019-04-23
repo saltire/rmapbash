@@ -10,8 +10,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use flate2::read::ZlibDecoder;
 
-use super::sizes::*;
 use super::nbt;
+use super::sizes::*;
 use super::types::Pair;
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; CHUNKS_IN_REGION_2D], Error> {

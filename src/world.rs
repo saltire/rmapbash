@@ -3,8 +3,8 @@ use std::path::Path;
 
 use regex::Regex;
 
-use super::sizes::*;
 use super::region;
+use super::sizes::*;
 use super::types::{Edges, Pair};
 
 pub struct World {

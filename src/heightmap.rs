@@ -2,9 +2,9 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use super::sizes::*;
 use super::image;
 use super::region;
+use super::sizes::*;
 use super::types::{Edges, Pair};
 use super::world;
 

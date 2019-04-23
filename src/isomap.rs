@@ -3,9 +3,9 @@ use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes;
-use super::sizes::*;
 use super::image;
 use super::region;
+use super::sizes::*;
 use super::types::{Edges, Pair};
 use super::world;
 
@@ -161,8 +161,8 @@ pub fn draw_region_iso_map(regionpath: &Path, outpath: &Path, night: bool)
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for cz in 30..CHUNKS_IN_REGION as u8 {
-        for cx in 30..CHUNKS_IN_REGION as u8 {
+    for cz in 0..CHUNKS_IN_REGION as u8 {
+        for cx in 0..CHUNKS_IN_REGION as u8 {
             let c = &Pair { x: cx, z: cz };
             if !rblocks.contains_key(c) {
                 continue;
