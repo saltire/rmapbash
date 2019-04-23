@@ -566,7 +566,7 @@ vine,111,111,111,255,,2
 void_air,0,0,0,0,,
 wall_sign,,,,,sign,
 wall_torch,,,,,torch,
-water,41,93,254,136,,3
+water,41,93,254,102,,3
 wet_sponge,160,158,63,255,,
 wheat,86,102,7,255,,
 white_banner,,,,,white_wool,

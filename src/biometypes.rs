@@ -5,6 +5,7 @@ use csv::Reader;
 use serde::Deserialize;
 
 use super::color::RGBA;
+use super::sizes::*;
 
 #[derive(Deserialize)]
 struct Row {
@@ -43,19 +44,19 @@ pub fn get_biome_types() -> Vec<BiomeType> {
                 r: row.fr.unwrap_or(0),
                 g: row.fg.unwrap_or(0),
                 b: row.fb.unwrap_or(0),
-                a: 255,
+                a: MAX_CHANNEL_VALUE,
             },
             grass: RGBA {
                 r: row.gr.unwrap_or(0),
                 g: row.gg.unwrap_or(0),
                 b: row.gb.unwrap_or(0),
-                a: 255,
+                a: MAX_CHANNEL_VALUE,
             },
             water: RGBA {
-                r: row.wr.unwrap_or(255),
-                g: row.wg.unwrap_or(255),
-                b: row.wb.unwrap_or(255),
-                a: 255,
+                r: row.wr.unwrap_or(MAX_CHANNEL_VALUE),
+                g: row.wg.unwrap_or(MAX_CHANNEL_VALUE),
+                b: row.wb.unwrap_or(MAX_CHANNEL_VALUE),
+                a: MAX_CHANNEL_VALUE,
             }
         });
     }

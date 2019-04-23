@@ -24,6 +24,13 @@ struct Row {
 pub struct BlockType {
     pub name: String,
     pub colors: [RGBA; BIOME_ARRAY_SIZE * LIGHT_LEVELS],
+    // pub alpha: u8,
+}
+
+impl PartialEq for BlockType {
+    fn eq(&self, other: &BlockType) -> bool {
+        self.name == other.name
+    }
 }
 
 pub fn get_block_types() -> Vec<BlockType> {
@@ -83,6 +90,7 @@ pub fn get_block_types() -> Vec<BlockType> {
         blocktypes.push(BlockType {
             name: format!("minecraft:{}", row.name),
             colors: block_colors,
+            // alpha: block_color.a,
         });
     }
 

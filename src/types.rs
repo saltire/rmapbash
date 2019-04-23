@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Edges<T> {
     pub n: T,
     pub e: T,
@@ -5,7 +6,7 @@ pub struct Edges<T> {
     pub w: T,
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub struct Pair<T> {
     pub x: T,
     pub z: T,

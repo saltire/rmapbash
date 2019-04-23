@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct RGBA {
     pub r: u8,
     pub g: u8,
@@ -130,8 +130,11 @@ pub fn multiply_color(color1: &RGBA, color2: &RGBA) -> RGBA {
 }
 
 pub fn blend_alpha_color(top: &RGBA, bottom: &RGBA) -> RGBA {
-    if top.a == 255 {
+    if top.a == 255 || bottom.a == 0 {
         return top.clone();
+    }
+    if top.a == 0 {
+        return bottom.clone();
     }
 
     let talpha = top.a as f64;

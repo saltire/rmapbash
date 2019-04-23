@@ -3,6 +3,8 @@ use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes;
+use super::color;
+use super::color::RGBA;
 use super::image;
 use super::region;
 use super::sizes::*;
@@ -27,17 +29,17 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
             let bpy2 = (bx + bz) * ISO_BLOCK_Y_MARGIN;
 
             for by in 0..BLOCKS_IN_CHUNK_Y {
-                let bo3 = by * BLOCKS_IN_CHUNK_Y + bo2;
+                let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 if cblocks[bo3] == 0 {
                     continue;
                 }
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
 
-                let light = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
-                    clights[bo3 + BLOCKS_IN_CHUNK_Y]
+                let light = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
+                    clights[bo3 + BLOCKS_IN_CHUNK_2D]
                 } else {
-                    LIGHT_LEVELS as u8 - 1
+                    MAX_LIGHT_LEVEL
                 };
 
                 let blockcolor = &blocktype.colors[
@@ -46,15 +48,26 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                     continue;
                 }
 
-                let bpy = bpy2 + (BLOCKS_IN_CHUNK_Y - by - 1) * ISO_BLOCK_SIDE_HEIGHT;
+                let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
 
-                for y in 0..ISO_BLOCK_HEIGHT {
+                // Don't draw the top if the block above is the same as this one.
+                // This prevents stripes appearing in columns of translucent blocks.
+                let skip_top = by < MAX_BLOCK_IN_CHUNK_Y &&
+                    cblocks[bo3] == cblocks[bo3 + BLOCKS_IN_CHUNK_2D];
+
+                for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
                         let po = (co + (bpy + y) * width + bpx + x) * 4;
-                        pixels[po] = blockcolor.r;
-                        pixels[po + 1] = blockcolor.g;
-                        pixels[po + 2] = blockcolor.b;
-                        pixels[po + 3] = blockcolor.a;
+                        let pcolor = color::blend_alpha_color(&blockcolor, &RGBA {
+                            r: pixels[po],
+                            g: pixels[po + 1],
+                            b: pixels[po + 2],
+                            a: pixels[po + 3],
+                        });
+                        pixels[po] = pcolor.r;
+                        pixels[po + 1] = pcolor.g;
+                        pixels[po + 2] = pcolor.b;
+                        pixels[po + 3] = pcolor.a;
                     }
                 }
             }
@@ -106,8 +119,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
                     let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
                     let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
 
-                    let cpx = (size.x as i16 / 2 + (acx as i16 - acz as i16 - 1)
-                        * ISO_CHUNK_X_MARGIN as i16) as usize;
+                    let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
                     let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
                     let co = cpy * size.x + cpx;
 
@@ -172,8 +184,7 @@ pub fn draw_region_iso_map(regionpath: &Path, outpath: &Path, night: bool)
             let acx = (c.x - climits.w) as usize;
             let acz = (c.z - climits.n) as usize;
 
-            let cpx = (size.x as i16 / 2 + (acx as i16 - acz as i16 - 1)
-                * ISO_CHUNK_X_MARGIN as i16) as usize;
+            let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
             let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
             let co = cpy * size.x + cpx;
 

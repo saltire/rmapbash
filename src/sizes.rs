@@ -3,6 +3,7 @@ pub const BLOCKS_IN_CHUNK: usize = 16;
 pub const BLOCKS_IN_SECTION_Y: usize = 16;
 pub const SECTIONS_IN_CHUNK_Y: usize = 16;
 pub const BLOCKS_IN_CHUNK_Y: usize = BLOCKS_IN_SECTION_Y * SECTIONS_IN_CHUNK_Y; // 256
+pub const MAX_BLOCK_IN_CHUNK_Y: usize = BLOCKS_IN_CHUNK_Y - 1; // 255
 
 pub const BLOCKS_IN_CHUNK_2D: usize = BLOCKS_IN_CHUNK * BLOCKS_IN_CHUNK; // 256
 pub const BLOCKS_IN_CHUNK_3D: usize = BLOCKS_IN_CHUNK_2D * BLOCKS_IN_CHUNK_Y; // 65536
@@ -38,4 +39,8 @@ pub const ISO_CHUNK_Y_MARGIN: usize = ISO_BLOCK_Y_MARGIN * BLOCKS_IN_CHUNK; // 1
 
 
 pub const LIGHT_LEVELS: usize = 16;
+pub const MAX_LIGHT_LEVEL: u8 = LIGHT_LEVELS as u8 - 1;
+
 pub const BIOME_ARRAY_SIZE: usize = 170;
+
+pub const MAX_CHANNEL_VALUE: u8 = 255;

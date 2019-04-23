@@ -3,6 +3,7 @@ use std::io::BufWriter;
 
 use png::HasParameters;
 
+use super::sizes::*;
 use super::types::Pair;
 
 pub fn draw_tiny_map(pixels: &[bool], size: Pair<usize>, file: File)
@@ -12,7 +13,7 @@ pub fn draw_tiny_map(pixels: &[bool], size: Pair<usize>, file: File)
 
     let mut data: Vec<u8> = vec![0; len];
     pixels.iter().enumerate().filter(|(_, v)| **v).for_each(|(i, _)| {
-        data[i as usize] = 255;
+        data[i as usize] = MAX_CHANNEL_VALUE;
     });
 
     let ref mut w = BufWriter::new(file);

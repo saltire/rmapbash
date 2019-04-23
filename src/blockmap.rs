@@ -18,17 +18,17 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
             let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
-                let bo3 = by * BLOCKS_IN_CHUNK_Y + bo2;
+                let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 if cblocks[bo3] == 0 {
                     continue;
                 }
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
 
-                let light = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
-                    clights[bo3 + BLOCKS_IN_CHUNK_Y]
+                let light = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
+                    clights[bo3 + BLOCKS_IN_CHUNK_2D]
                 } else {
-                    LIGHT_LEVELS as u8 - 1
+                    MAX_LIGHT_LEVEL
                 };
 
                 let blockcolor = &blocktype.colors[
@@ -39,7 +39,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 }
 
                 color = color::blend_alpha_color(&color, blockcolor);
-                if color.a == 255 {
+                if color.a == MAX_CHANNEL_VALUE {
                     break;
                 }
             }
