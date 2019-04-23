@@ -14,12 +14,20 @@ pub struct World {
 }
 
 impl World {
-    pub fn get_ortho_size(&self) -> Pair<usize> {
+    pub fn get_chunk_size(&self) -> Pair<usize> {
         Pair {
             x: ((self.rlimits.e - self.rlimits.w + 1) as usize * CHUNKS_IN_REGION
-                - (self.margins.e + self.margins.w)) * BLOCKS_IN_CHUNK,
+                - (self.margins.e + self.margins.w)),
             z: ((self.rlimits.s - self.rlimits.n + 1) as usize * CHUNKS_IN_REGION
-                - (self.margins.n + self.margins.s)) * BLOCKS_IN_CHUNK,
+                - (self.margins.n + self.margins.s)),
+        }
+    }
+
+    pub fn get_ortho_size(&self) -> Pair<usize> {
+        let csize = self.get_chunk_size();
+        Pair {
+            x: csize.x * BLOCKS_IN_CHUNK,
+            z: csize.z * BLOCKS_IN_CHUNK,
         }
     }
 }

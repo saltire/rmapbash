@@ -10,6 +10,7 @@ mod color;
 mod data;
 mod heightmap;
 mod image;
+mod isomap;
 mod nbt;
 mod region;
 mod sizes;
@@ -57,10 +58,12 @@ fn main() {
                 let start = Instant::now();
 
                 let result = match mode {
-                    "region" => blockmap::draw_region_block_map(inpath, outpath.as_path(), night),
+                    "region" => isomap::draw_region_iso_map(inpath, outpath.as_path(), night),
+                    // "region" => blockmap::draw_region_block_map(inpath, outpath.as_path(), night),
                     // "region" => heightmap::draw_region_heightmap(inpath, outpath.as_path()),
                     // "region" => tinymap::draw_region_chunk_map(inpath, outpath.as_path()),
-                    _ => blockmap::draw_world_block_map(inpath, outpath.as_path(), night),
+                    _ => isomap::draw_world_iso_map(inpath, outpath.as_path(), night),
+                    // _ => blockmap::draw_world_block_map(inpath, outpath.as_path(), night),
                     // _ => heightmap::draw_world_heightmap(inpath, outpath.as_path()),
                     // _ => tinymap::draw_world_chunk_map(inpath, outpath.as_path()),
                 };

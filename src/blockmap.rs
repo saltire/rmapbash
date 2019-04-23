@@ -10,10 +10,6 @@ use super::region;
 use super::types::{Edges, Pair};
 use super::world;
 
-fn is_empty(block: u16) -> bool {
-    block == 0 || block == 14 || block == 98 || block == 563
-}
-
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
     for bz in 0..BLOCKS_IN_CHUNK {
@@ -23,28 +19,29 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_Y + bo2;
-                if !is_empty(cblocks[bo3]) {
-                    let blocktype = &blocktypes[cblocks[bo3] as usize];
-                    let blockcolor = if blocktype.has_biome_colors {
-                        &blocktype.biome_colors[&cbiomes[bo2]]
+                if cblocks[bo3] == 0 {
+                    continue;
+                }
+
+                let blocktype = &blocktypes[cblocks[bo3] as usize];
+                let blockcolor = if blocktype.has_biome_colors {
+                    &blocktype.biome_colors[&cbiomes[bo2]]
+                } else {
+                    &blocktype.color
+                };
+                if blockcolor.a == 0 {
+                    continue;
+                }
+
+                color = color::blend_alpha_color(&color,
+                    &(if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
+                        color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_IN_CHUNK_Y])
                     } else {
-                        &blocktype.color
-                    };
+                        blockcolor.clone()
+                    }));
 
-                    if blockcolor.a == 0 {
-                        continue;
-                    }
-
-                    color = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
-                        color::blend_alpha_color(&color,
-                            &color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_IN_CHUNK_Y]))
-                    } else {
-                        color::blend_alpha_color(&color, &blockcolor)
-                    };
-
-                    if color.a == 255 {
-                        break;
-                    }
+                if color.a == 255 {
+                    break;
                 }
             }
 
@@ -57,6 +54,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     }
 }
 
+#[allow(dead_code)]
 pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
@@ -84,9 +82,9 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 
         for (c, cblocks) in rblocks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = arx * CHUNKS_IN_REGION + c.x as usize;
-            let acz = arz * CHUNKS_IN_REGION + c.z as usize;
-            let co = ((acz - world.margins.n) * size.x + (acx - world.margins.w)) * BLOCKS_IN_CHUNK;
+            let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
+            let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
+            let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
             draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
                 &night);
@@ -99,6 +97,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
     println!("Creating block map from region file {}", regionpath.display());

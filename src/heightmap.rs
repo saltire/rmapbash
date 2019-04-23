@@ -34,9 +34,9 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
         let arz = (r.z - world.rlimits.w) as usize;
 
         for (c, cpixels) in rheightmaps.iter() {
-            let acx = arx * CHUNKS_IN_REGION + c.x as usize;
-            let acz = arz * CHUNKS_IN_REGION + c.z as usize;
-            let co = ((acz - world.margins.n) * size.x + (acx - world.margins.w)) * BLOCKS_IN_CHUNK;
+            let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
+            let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
+            let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
             draw_chunk(&mut pixels, cpixels, &co, &size.x);
         }
