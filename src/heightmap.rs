@@ -22,27 +22,28 @@ pub fn draw_world_heightmap(worldpath: &Path, outpath: &Path) -> Result<(), Box<
 
     let world = world::get_world(worldpath)?;
 
-    let mut pixels = vec![0u8; world.size.x * world.size.z];
+    let size = world.get_ortho_size();
+    let mut pixels = vec![0u8; size.x * size.z];
+
     for r in world.regions.iter() {
         println!("Reading heightmap for region {}, {}", r.x, r.z);
         let regionpath = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
         let rheightmaps = region::read_region_chunk_heightmaps(regionpath.as_path())?;
 
-        let arx = (r.x - world.rmin.x) as usize;
-        let arz = (r.z - world.rmin.z) as usize;
+        let arx = (r.x - world.rlimits.n) as usize;
+        let arz = (r.z - world.rlimits.w) as usize;
 
         for (c, cpixels) in rheightmaps.iter() {
             let acx = arx * CHUNKS_IN_REGION + c.x as usize;
             let acz = arz * CHUNKS_IN_REGION + c.z as usize;
-            let co = ((acz - world.margins.n) * world.size.x + (acx - world.margins.w))
-                * BLOCKS_IN_CHUNK;
+            let co = ((acz - world.margins.n) * size.x + (acx - world.margins.w)) * BLOCKS_IN_CHUNK;
 
-            draw_chunk(&mut pixels, cpixels, &co, &world.size.x);
+            draw_chunk(&mut pixels, cpixels, &co, &size.x);
         }
     }
 
     let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, world.size, file, false)?;
+    image::draw_block_map(&pixels, size, file, false)?;
 
     Ok(())
 }

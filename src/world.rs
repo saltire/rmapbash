@@ -8,10 +8,20 @@ use super::region;
 use super::types::{Edges, Pair};
 
 pub struct World {
-    pub size: Pair<usize>,
     pub regions: Vec<Pair<i32>>,
-    pub rmin: Pair<i32>,
+    pub rlimits: Edges<i32>,
     pub margins: Edges<usize>,
+}
+
+impl World {
+    pub fn get_ortho_size(&self) -> Pair<usize> {
+        Pair {
+            x: ((self.rlimits.e - self.rlimits.w + 1) as usize * CHUNKS_IN_REGION
+                - (self.margins.e + self.margins.w)) * BLOCKS_IN_CHUNK,
+            z: ((self.rlimits.s - self.rlimits.n + 1) as usize * CHUNKS_IN_REGION
+                - (self.margins.n + self.margins.s)) * BLOCKS_IN_CHUNK,
+        }
+    }
 }
 
 pub fn read_world_regions(path: &Path) -> Result<Vec<Pair<i32>>, Error> {
@@ -85,14 +95,8 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
     }
 
     Ok(World {
-        size: Pair {
-            x: ((rlimits.e - rlimits.w + 1) as usize * CHUNKS_IN_REGION - (margins.e + margins.w))
-                * BLOCKS_IN_CHUNK,
-            z: ((rlimits.s - rlimits.n + 1) as usize * CHUNKS_IN_REGION - (margins.n + margins.s))
-                * BLOCKS_IN_CHUNK,
-        },
         regions,
-        rmin: Pair { x: rlimits.w, z: rlimits.n },
+        rlimits,
         margins,
     })
 }

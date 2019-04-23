@@ -1,11 +1,11 @@
 pub const BLOCKS_IN_CHUNK: usize = 16;
 
 pub const BLOCKS_IN_SECTION_Y: usize = 16;
-pub const SECTIONS_Y: usize = 16;
-pub const BLOCKS_Y: usize = BLOCKS_IN_SECTION_Y * SECTIONS_Y; // 256
+pub const SECTIONS_IN_CHUNK_Y: usize = 16;
+pub const BLOCKS_IN_CHUNK_Y: usize = BLOCKS_IN_SECTION_Y * SECTIONS_IN_CHUNK_Y; // 256
 
 pub const BLOCKS_IN_CHUNK_2D: usize = BLOCKS_IN_CHUNK * BLOCKS_IN_CHUNK; // 256
-pub const BLOCKS_IN_CHUNK_3D: usize = BLOCKS_IN_CHUNK_2D * BLOCKS_Y; // 65536
+pub const BLOCKS_IN_CHUNK_3D: usize = BLOCKS_IN_CHUNK_2D * BLOCKS_IN_CHUNK_Y; // 65536
 
 pub const BLOCKS_IN_SECTION_3D: usize = BLOCKS_IN_CHUNK_2D * BLOCKS_IN_SECTION_Y; // 4096
 // pub const BLOCKS_IN_CHUNK_3D: usize = BLOCKS_IN_SECTION_3D * SECTIONS_Y; // 65536

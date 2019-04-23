@@ -21,8 +21,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
             let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
-            for by in (0..BLOCKS_Y).rev() {
-                let bo3 = by * BLOCKS_Y + bo2;
+            for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
+                let bo3 = by * BLOCKS_IN_CHUNK_Y + bo2;
                 if !is_empty(cblocks[bo3]) {
                     let blocktype = &blocktypes[cblocks[bo3] as usize];
                     let blockcolor = if blocktype.has_biome_colors {
@@ -35,9 +35,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                         continue;
                     }
 
-                    color = if *night && by < BLOCKS_Y - 1 {
+                    color = if *night && by < BLOCKS_IN_CHUNK_Y - 1 {
                         color::blend_alpha_color(&color,
-                            &color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_Y]))
+                            &color::set_light_level(&blockcolor, &clights[bo3 + BLOCKS_IN_CHUNK_Y]))
                     } else {
                         color::blend_alpha_color(&color, &blockcolor)
                     };
@@ -63,10 +63,12 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 
     let world = world::get_world(worldpath)?;
 
+    let size = world.get_ortho_size();
+    let mut pixels = vec![0u8; size.x * size.z * 4];
+
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
-    let mut pixels = vec![0u8; world.size.x * world.size.z * 4];
     for r in world.regions.iter() {
         let regionpath_str = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
         let regionpath = regionpath_str.as_path();
@@ -77,23 +79,22 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
         let rbiomes = region::read_region_chunk_biomes(regionpath)?;
 
         println!("Drawing block map for region {}, {}", r.x, r.z);
-        let arx = (r.x - world.rmin.x) as usize;
-        let arz = (r.z - world.rmin.z) as usize;
+        let arx = (r.x - world.rlimits.w) as usize;
+        let arz = (r.z - world.rlimits.n) as usize;
 
         for (c, cblocks) in rblocks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
             let acx = arx * CHUNKS_IN_REGION + c.x as usize;
             let acz = arz * CHUNKS_IN_REGION + c.z as usize;
-            let co = ((acz - world.margins.n) * world.size.x + (acx - world.margins.w))
-                * BLOCKS_IN_CHUNK;
+            let co = ((acz - world.margins.n) * size.x + (acx - world.margins.w)) * BLOCKS_IN_CHUNK;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co,
-                &world.size.x, &night);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
+                &night);
         }
     }
 
     let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, world.size, file, true)?;
+    image::draw_block_map(&pixels, size, file, true)?;
 
     Ok(())
 }
