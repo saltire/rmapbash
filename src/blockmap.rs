@@ -31,8 +31,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                     MAX_LIGHT_LEVEL
                 };
 
-                let blockcolor = &blocktype.colors[
-                    cbiomes[bo2] as usize * LIGHT_LEVELS + light as usize];
+                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][light as usize];
 
                 if blockcolor.a == 0 {
                     continue;

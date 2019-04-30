@@ -23,7 +23,7 @@ struct Row {
 
 pub struct BlockType {
     pub name: String,
-    pub colors: [RGBA; BIOME_ARRAY_SIZE * LIGHT_LEVELS],
+    pub colors: [[RGBA; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
     // pub alpha: u8,
 }
 
@@ -71,7 +71,7 @@ pub fn get_block_types() -> Vec<BlockType> {
 
         let biome_color_type = row.biome.unwrap_or(0);
 
-        let mut block_colors = [RGBA::default(); BIOME_ARRAY_SIZE * LIGHT_LEVELS];
+        let mut block_colors = [[RGBA::default(); LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
         for biome in &biome_types {
             let biome_color = match biome_color_type {
                 1 => color::shade_biome_color(&block_color, &biome.foliage),
@@ -81,7 +81,7 @@ pub fn get_block_types() -> Vec<BlockType> {
             };
 
             for ll in 0..LIGHT_LEVELS {
-                block_colors[biome.id as usize * LIGHT_LEVELS + ll] =
+                block_colors[biome.id as usize][ll] =
                     color::set_light_level(&biome_color, &(ll as u8));
             }
 
