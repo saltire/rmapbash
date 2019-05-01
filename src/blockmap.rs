@@ -65,11 +65,15 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
+    let mut i = 0;
+    let len = world.regions.len();
+
     for r in world.regions.iter() {
+        i += 1;
+        println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
+
         let regionpath_str = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
         let regionpath = regionpath_str.as_path();
-
-        println!("Reading blocks for region {}, {}", r.x, r.z);
         let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
         let rlights = region::read_region_chunk_lightmaps(regionpath)?;
         let rbiomes = region::read_region_chunk_biomes(regionpath)?;

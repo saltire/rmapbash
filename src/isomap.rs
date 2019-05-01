@@ -88,6 +88,9 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
+    let mut i = 0;
+    let len = world.regions.len();
+
     for rz in world.rlimits.n..world.rlimits.s + 1 {
         for rx in world.rlimits.w..world.rlimits.e + 1 {
             let r = Pair { x: rx, z: rz };
@@ -95,10 +98,11 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
                 continue;
             }
 
+            i += 1;
+            println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
+
             let regionpath_str = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
             let regionpath = regionpath_str.as_path();
-
-            println!("Reading blocks for region {}, {}", r.x, r.z);
             let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
             let rlights = region::read_region_chunk_lightmaps(regionpath)?;
             let rbiomes = region::read_region_chunk_biomes(regionpath)?;
