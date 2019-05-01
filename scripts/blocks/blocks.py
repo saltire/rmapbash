@@ -4,9 +4,13 @@ import os
 from PIL import Image
 
 
-blocktexdir = '[minecraft data dir]/1.13.2/assets/minecraft/textures/block/'
+# datadir = '[path to contents of extracted minecraft version .jar file]'
+datadir = '/c/Users/marcus/AppData/Roaming/.minecraft/versions/1.14/1.14'
+blocktexdir = datadir + '/assets/minecraft/textures/block/'
 
-colors = {}
+currentdir = os.path.dirname(__file__)
+
+texturecolors = {}
 for imgfile in sorted(os.listdir(blocktexdir)):
     if imgfile[-4:] != '.png':
         continue
@@ -50,21 +54,66 @@ for imgfile in sorted(os.listdir(blocktexdir)):
             l = int(sum(rr) / len(rr))
             color = (l, l, l, int(sum(aa) / len(aa)))
 
-    colors[imgfile[:-4]] = color
+    texturecolors[imgfile[:-4]] = color
 
-with open('blocknames.csv', 'r') as blockfile:
-    blocks = [b.strip() for b in blockfile.readlines()]
-
-    with open('blocks.csv', 'w') as csvfile:
-        writer = csv.writer(csvfile)
-
-        writer.writerow(['block', 'r', 'g', 'b', 'a'])
-        for block in blocks:
-            writer.writerow([block, *colors.get(block, ['','','',''])])
-
-
-with open('texturecolors.csv', 'w') as csvfile:
+with open(os.path.join(currentdir, 'texturecolors.csv'), 'w') as csvfile:
     writer = csv.writer(csvfile)
 
-    for texture, color in colors.items():
+    for texture, color in texturecolors.items():
         writer.writerow([texture, *color])
+
+
+with open(os.path.join(currentdir, 'blocknames.csv'), 'r') as csvfile:
+    blocknames = [b.strip() for b in csvfile.readlines()]
+
+blockcolors = {}
+with open(os.path.join(currentdir, 'blockcolors.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, r, g, b, a = line.strip().split(',')
+        blockcolors[block] = r, g, b, a
+
+copyblock = {}
+with open(os.path.join(currentdir, 'copyblock.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, blocktocopy = line.strip().split(',')
+        copyblock[block] = blocktocopy
+
+copytexture = {}
+with open(os.path.join(currentdir, 'copytexture.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, texture = line.strip().split(',')
+        copytexture[block] = texture
+
+biomes = {}
+with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, biome = line.strip().split(',')
+        biomes[block] = biome
+
+
+with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfile:
+    writer = csv.writer(csvfile)
+
+    writer.writerow(['name', 'r', 'g', 'b', 'a', 'biome'])
+    writer.writerow(['', '', '', '', '', ''])
+
+    for block in blocknames:
+        color = None
+
+        if block in blockcolors:
+            color = blockcolors[block]
+        elif block in copytexture:
+            texture = copytexture[block]
+            color = texturecolors[texture]
+        elif block in copyblock:
+            blocktocopy = copyblock[block]
+            if blocktocopy in blockcolors:
+                color = blockcolors[blocktocopy]
+            elif blocktocopy in copytexture:
+                texture = copytexture[blocktocopy]
+                color = texturecolors[texture]
+
+        if color is None:
+            print('No texture for', block)
+
+        writer.writerow([block, *(color or ('', '', '', '')), biomes.get(block, '')])

@@ -80,6 +80,10 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
                         vec!["Y", "Palette", "BlockStates"])?;
+                    if !section.contains_key("BlockStates") {
+                        continue;
+                    }
+
                     let y = section["Y"].to_u8()?;
                     let palette = section["Palette"].to_list()?;
                     let states = section["BlockStates"].to_long_array()?;
@@ -138,6 +142,10 @@ pub fn read_region_chunk_lightmaps(path: &Path)
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
                         vec!["Y", "BlockLight"])?;
+                    if !section.contains_key("BlockLight") {
+                        continue;
+                    }
+
                     let y = section["Y"].to_u8()?;
                     let bytes = section["BlockLight"].to_u8_array()?;
                     let so = *y as usize * BLOCKS_IN_SECTION_3D;

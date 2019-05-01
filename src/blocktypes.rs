@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::Path;
 
 use csv::Reader;
@@ -17,7 +16,6 @@ struct Row {
     g: Option<u8>,
     b: Option<u8>,
     a: Option<u8>,
-    copy: Option<String>,
     biome: Option<u8>,
 }
 
@@ -42,32 +40,13 @@ pub fn get_block_types() -> Vec<BlockType> {
 
     let rows: Vec<Row> = reader.deserialize().map(|res| res.unwrap()).collect();
 
-    // Build a map of explicitly defined colours, indexed by the defining block type,
-    // as a lookup for blocks that reference other blocks' colours.
-    let mut colors: HashMap<&str, RGBA> = HashMap::new();
     for row in &rows {
-        if row.copy.is_none() {
-            colors.insert(&row.name, RGBA {
-                r: row.r.unwrap_or(0),
-                g: row.g.unwrap_or(0),
-                b: row.b.unwrap_or(0),
-                a: row.a.unwrap_or(0),
-            });
-        }
-    }
-
-    // Now iterate through all the block types and build their colours.
-    for row in &rows {
-        let block_color = row.copy.clone()
-            .and_then(|c| colors.get(c.as_str()))
-            .map_or_else(
-                || RGBA {
-                    r: row.r.unwrap_or(0),
-                    g: row.g.unwrap_or(0),
-                    b: row.b.unwrap_or(0),
-                    a: row.a.unwrap_or(0),
-                },
-                |c| c.clone());
+        let block_color = RGBA {
+            r: row.r.unwrap_or(0),
+            g: row.g.unwrap_or(0),
+            b: row.b.unwrap_or(0),
+            a: row.a.unwrap_or(0),
+        };
 
         let biome_color_type = row.biome.unwrap_or(0);
 
