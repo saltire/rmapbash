@@ -131,10 +131,10 @@ pub fn multiply_color(color1: &RGBA, color2: &RGBA) -> RGBA {
 
 pub fn blend_alpha_color(top: &RGBA, bottom: &RGBA) -> RGBA {
     if top.a == 255 || bottom.a == 0 {
-        return top.clone();
+        return *top;
     }
     if top.a == 0 {
-        return bottom.clone();
+        return *bottom;
     }
 
     let talpha = top.a as f64;

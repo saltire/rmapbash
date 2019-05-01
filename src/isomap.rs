@@ -20,15 +20,15 @@ fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
     cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
-    for bz in 0..BLOCKS_IN_CHUNK {
-        for bx in 0..BLOCKS_IN_CHUNK {
+    for bz in (0..BLOCKS_IN_CHUNK).rev() {
+        for bx in (0..BLOCKS_IN_CHUNK).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
 
             let bpx = (ISO_CHUNK_X_MARGIN as i16 +
                 (bx as i16 - bz as i16 - 1) * ISO_BLOCK_X_MARGIN as i16) as usize;
             let bpy2 = (bx + bz) * ISO_BLOCK_Y_MARGIN;
 
-            for by in 0..BLOCKS_IN_CHUNK_Y {
+            for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 if cblocks[bo3] == 0 {
                     continue;
@@ -57,12 +57,16 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
                         let po = (co + (bpy + y) * width + bpx + x) * 4;
-                        let pcolor = color::blend_alpha_color(&blockcolor, &RGBA {
+                        if pixels[po + 3] == MAX_CHANNEL_VALUE {
+                            continue;
+                        }
+
+                        let pcolor = color::blend_alpha_color(&RGBA {
                             r: pixels[po],
                             g: pixels[po + 1],
                             b: pixels[po + 2],
                             a: pixels[po + 3],
-                        });
+                        }, &blockcolor);
                         pixels[po] = pcolor.r;
                         pixels[po + 1] = pcolor.g;
                         pixels[po + 2] = pcolor.b;
@@ -91,8 +95,8 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
     let mut i = 0;
     let len = world.regions.len();
 
-    for rz in world.rlimits.n..world.rlimits.s + 1 {
-        for rx in world.rlimits.w..world.rlimits.e + 1 {
+    for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
+        for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
             let r = Pair { x: rx, z: rz };
             if !world.regions.contains(&r) {
                 continue;
@@ -111,8 +115,8 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             let arx = (r.x - world.rlimits.w) as usize;
             let arz = (r.z - world.rlimits.n) as usize;
 
-            for cz in 0..CHUNKS_IN_REGION as u8 {
-                for cx in 0..CHUNKS_IN_REGION as u8 {
+            for cz in (0..CHUNKS_IN_REGION as u8).rev() {
+                for cx in (0..CHUNKS_IN_REGION as u8).rev() {
                     let c = &Pair { x: cx, z: cz };
                     if !rblocks.contains_key(c) {
                         continue;
@@ -176,8 +180,8 @@ pub fn draw_region_iso_map(regionpath: &Path, outpath: &Path, night: bool)
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in (0..CHUNKS_IN_REGION as u8).rev() {
+        for cx in (0..CHUNKS_IN_REGION as u8).rev() {
             let c = &Pair { x: cx, z: cz };
             if !rblocks.contains_key(c) {
                 continue;
