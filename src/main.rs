@@ -25,6 +25,11 @@ fn main() {
             .help("Path to either a save directory, a region file (.mca), or a data file (.dat)")
             .required(true)
             .index(1))
+        // .arg(Arg::with_name("r")
+        //     .short("r")
+        //     .long("region")
+        //     .value_names(&["RX", "RZ"])
+        //     .help("Region coordinates"))
         .arg(Arg::with_name("n")
             .short("n")
             .long("night")
@@ -58,10 +63,15 @@ fn main() {
                 let start = Instant::now();
 
                 let result = match mode {
-                    "region" => isomap::draw_region_iso_map(inpath, outpath.as_path(), night),
-                    // "region" => blockmap::draw_region_block_map(inpath, outpath.as_path(), night),
-                    // "region" => heightmap::draw_region_heightmap(inpath, outpath.as_path()),
-                    // "region" => tinymap::draw_region_chunk_map(inpath, outpath.as_path()),
+                    "region" => {
+                        let worldpath = inpath.parent().unwrap().parent().unwrap();
+                        let r = region::get_coords_from_path(inpath.to_str().unwrap()).unwrap();
+
+                        isomap::draw_region_iso_map(&worldpath, &r, outpath.as_path(), night)
+                        // blockmap::draw_region_block_map(&worldpath, &r, outpath.as_path(), night)
+                        // heightmap::draw_region_heightmap(&worldpath, &r, outpath.as_path())
+                        // tinymap::draw_region_chunk_map(&worldpath, &r, outpath.as_path())
+                    },
                     _ => isomap::draw_world_iso_map(inpath, outpath.as_path(), night),
                     // _ => blockmap::draw_world_block_map(inpath, outpath.as_path(), night),
                     // _ => heightmap::draw_world_heightmap(inpath, outpath.as_path()),

@@ -71,12 +71,10 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
     for r in world.regions.iter() {
         i += 1;
         println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
-
-        let regionpath_str = worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z));
-        let regionpath = regionpath_str.as_path();
-        let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
-        let rlights = region::read_region_chunk_lightmaps(regionpath)?;
-        let rbiomes = region::read_region_chunk_biomes(regionpath)?;
+        let regionpath = region::get_path_from_coords(worldpath, &r);
+        let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
+        let rlights = region::read_region_chunk_lightmaps(regionpath.as_path())?;
+        let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
         println!("Drawing block map for region {}, {}", r.x, r.z);
         let arx = (r.x - world.rlimits.w) as usize;
@@ -100,27 +98,27 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 }
 
 #[allow(dead_code)]
-pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
+pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
-    let r = region::get_coords_from_path(regionpath.to_str().unwrap()).unwrap();
     println!("Creating block map for region {}, {}", r.x, r.z);
+    let regionpath = region::get_path_from_coords(worldpath, &r);
 
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading blocks");
-    let rblocks = region::read_region_chunk_blocks(regionpath, &blocknames)?;
+    let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
     if rblocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
     println!("Reading light maps");
-    let rlights = region::read_region_chunk_lightmaps(regionpath)?;
+    let rlights = region::read_region_chunk_lightmaps(regionpath.as_path())?;
 
     println!("Reading biomes");
-    let rbiomes = region::read_region_chunk_biomes(regionpath)?;
+    let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
     println!("Drawing block map");
     let climits = Edges {

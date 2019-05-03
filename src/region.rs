@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, Error, SeekFrom};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::result::Result;
 
 use bitreader::BitReader;
@@ -23,6 +23,10 @@ pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
             x: caps.get(1).unwrap().as_str().parse::<i32>().unwrap(),
             z: caps.get(2).unwrap().as_str().parse::<i32>().unwrap(),
         })
+}
+
+pub fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<i32>) -> PathBuf {
+    worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z))
 }
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; CHUNKS_IN_REGION_2D], Error> {
