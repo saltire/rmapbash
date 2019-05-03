@@ -77,8 +77,8 @@ fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
 }
 
 pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[&str])
--> Result<HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>, Error> {
-    let mut blockmaps = HashMap::new();
+-> Result<[[[u16; BLOCKS_IN_CHUNK_3D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION], Error> {
+    let mut blockmaps = [[[0u16; BLOCKS_IN_CHUNK_3D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION];
     if !path.exists() {
         return Ok(blockmaps);
     }
@@ -92,8 +92,6 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_none() { continue; }
                 if nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_none() { continue; }
                 let slen = nbt::read_list_length(&mut reader)?;
-
-                let mut blocks = [0u16; BLOCKS_IN_CHUNK_3D];
 
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
@@ -129,11 +127,10 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
 
                     let mut br = BitReader::new(&bytes);
                     for i in (0..BLOCKS_IN_SECTION_3D).rev() {
-                        blocks[so + i] = pblocks[br.read_u16(bits).unwrap() as usize];
+                        blockmaps[cx as usize][cz as usize][so + i] =
+                            pblocks[br.read_u16(bits).unwrap() as usize];
                     }
                 }
-
-                blockmaps.insert(Pair { x: cx, z: cz }, blocks);
             }
         }
     }
@@ -142,8 +139,8 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
 }
 
 pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
--> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>, Error> {
-    let mut lightmaps = HashMap::new();
+-> Result<[[[u8; BLOCKS_IN_CHUNK_3D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION], Error> {
+    let mut lightmaps = [[[0u8; BLOCKS_IN_CHUNK_3D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION];
     if !path.exists() {
         return Ok(lightmaps)
     }
@@ -158,8 +155,6 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                 if nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_none() { continue; }
                 let slen = nbt::read_list_length(&mut reader)?;
 
-                let mut lights = [0u8; BLOCKS_IN_CHUNK_3D];
-
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
                         vec!["Y", "BlockLight"])?;
@@ -172,12 +167,10 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                     let so = *y as usize * BLOCKS_IN_SECTION_3D;
 
                     for i in 0..(BLOCKS_IN_SECTION_3D / 2) {
-                        lights[so + i * 2] = bytes[i] & 0x0f;
-                        lights[so + i * 2 + 1] = bytes[i] >> 4;
+                        lightmaps[cx as usize][cz as usize][so + i * 2] = bytes[i] & 0x0f;
+                        lightmaps[cx as usize][cz as usize][so + i * 2 + 1] = bytes[i] >> 4;
                     }
                 }
-
-                lightmaps.insert(Pair { x: cx, z: cz }, lights);
             }
         }
     }
@@ -186,8 +179,8 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
 }
 
 pub fn read_region_chunk_biomes(path: &Path)
--> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
-    let mut biomes = HashMap::new();
+-> Result<[[[u8; BLOCKS_IN_CHUNK_2D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION], Error> {
+    let mut biomes = [[[0u8; BLOCKS_IN_CHUNK_2D]; CHUNKS_IN_REGION]; CHUNKS_IN_REGION];
     if !path.exists() {
         return Ok(biomes)
     }
@@ -199,12 +192,10 @@ pub fn read_region_chunk_biomes(path: &Path)
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_none() { continue; }
                 if nbt::seek_compound_tag_name(&mut reader, "Biomes")?.is_none() { continue; }
 
-                let mut cbiomes = [0u8; BLOCKS_IN_CHUNK_2D];
-                let cbiomes_vector = nbt::read_u8_array(&mut reader)?;
-                if cbiomes_vector.len() == BLOCKS_IN_CHUNK_2D {
-                    cbiomes.copy_from_slice(&cbiomes_vector);
+                let cbiomes = nbt::read_u8_array(&mut reader)?;
+                if cbiomes.len() == BLOCKS_IN_CHUNK_2D {
+                    biomes[cx as usize][cz as usize].copy_from_slice(&cbiomes);
                 }
-                biomes.insert(Pair { x: cx, z: cz }, cbiomes);
             }
         }
     }

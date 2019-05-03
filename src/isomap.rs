@@ -105,6 +105,11 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             i += 1;
             println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
             let regionpath = region::get_path_from_coords(worldpath, &r);
+            let rchunks = region::read_region_chunk_coords(&regionpath)?;
+            if rchunks.len() == 0 {
+                println!("No chunks in region.");
+                return Ok(());
+            }
             let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
             let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
             let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
@@ -113,23 +118,23 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             let arx = (r.x - world.rlimits.w) as usize;
             let arz = (r.z - world.rlimits.n) as usize;
 
-            for cz in (0..CHUNKS_IN_REGION as u8).rev() {
-                for cx in (0..CHUNKS_IN_REGION as u8).rev() {
-                    let c = &Pair { x: cx, z: cz };
-                    if !rblocks.contains_key(c) {
+            for cz in (0..CHUNKS_IN_REGION).rev() {
+                for cx in (0..CHUNKS_IN_REGION).rev() {
+                    if !rchunks.contains(&Pair { x: cx as u8, z: cz as u8 }) {
                         continue;
                     }
 
                     // println!("Drawing chunk {}, {}", c.x, c.z);
-                    let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
-                    let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
+                    let acx = arx * CHUNKS_IN_REGION + cx - world.margins.w;
+                    let acz = arz * CHUNKS_IN_REGION + cz - world.margins.n;
 
                     let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
                     let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
                     let co = cpy * size.x + cpx;
 
-                    draw_chunk(&mut pixels, &blocktypes, &rblocks[c], &rlights[c], &rbiomes[c], &co,
-                        &size.x, &night);
+                    draw_chunk(&mut pixels, &blocktypes,
+                        &rblocks[cx][cz], &rlights[cx][cz], &rbiomes[cx][cz],
+                        &co, &size.x, &night);
                 }
             }
         }
@@ -147,16 +152,18 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
     println!("Creating block map for region {}, {}", r.x, r.z);
     let regionpath = region::get_path_from_coords(worldpath, r);
 
+    let rchunks = region::read_region_chunk_coords(&regionpath)?;
+    if rchunks.len() == 0 {
+        println!("No chunks in region.");
+        return Ok(());
+    }
+
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading blocks");
     let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
-    if rblocks.keys().len() == 0 {
-        println!("No chunks in region.");
-        return Ok(());
-    }
 
     println!("Reading light maps");
     let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
@@ -166,10 +173,10 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
 
     println!("Drawing block map");
     let climits = Edges {
-        n: rblocks.keys().map(|c| c.z).min().unwrap(),
-        e: rblocks.keys().map(|c| c.x).max().unwrap(),
-        s: rblocks.keys().map(|c| c.z).max().unwrap(),
-        w: rblocks.keys().map(|c| c.x).min().unwrap(),
+        n: rchunks.iter().map(|c| c.z).min().unwrap(),
+        e: rchunks.iter().map(|c| c.x).max().unwrap(),
+        s: rchunks.iter().map(|c| c.z).max().unwrap(),
+        w: rchunks.iter().map(|c| c.x).min().unwrap(),
     };
     let csize = Pair {
         x: (climits.e - climits.w + 1) as usize,
@@ -179,23 +186,23 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for cz in (0..CHUNKS_IN_REGION as u8).rev() {
-        for cx in (0..CHUNKS_IN_REGION as u8).rev() {
-            let c = &Pair { x: cx, z: cz };
-            if !rblocks.contains_key(c) {
+    for cz in (0..CHUNKS_IN_REGION).rev() {
+        for cx in (0..CHUNKS_IN_REGION).rev() {
+            if !rchunks.contains(&Pair { x: cx as u8, z: cz as u8 }) {
                 continue;
             }
 
             // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = (c.x - climits.w) as usize;
-            let acz = (c.z - climits.n) as usize;
+            let acx = cx - climits.w as usize;
+            let acz = cz - climits.n as usize;
 
             let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
             let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
             let co = cpy * size.x + cpx;
 
-            draw_chunk(&mut pixels, &blocktypes, &rblocks[c], &rlights[c], &rbiomes[c], &co,
-                &size.x, &night);
+            draw_chunk(&mut pixels, &blocktypes,
+                &rblocks[cx][cz], &rlights[cx][cz], &rbiomes[cx][cz],
+                &co, &size.x, &night);
         }
     }
 
