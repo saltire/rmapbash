@@ -8,7 +8,7 @@ use super::color::RGBA;
 use super::image;
 use super::region;
 use super::sizes::*;
-use super::types::{Edges, Pair};
+use super::types::*;
 use super::world;
 
 fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
@@ -105,8 +105,8 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             i += 1;
             println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
             let regionpath = region::get_path_from_coords(worldpath, &r);
-            let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
-            let rlights = region::read_region_chunk_lightmaps(regionpath.as_path())?;
+            let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
+            let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
             let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
             println!("Drawing block map for region {}, {}", r.x, r.z);
@@ -152,14 +152,14 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading blocks");
-    let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &blocknames)?;
+    let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
     if rblocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
     println!("Reading light maps");
-    let rlights = region::read_region_chunk_lightmaps(regionpath.as_path())?;
+    let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
 
     println!("Reading biomes");
     let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;

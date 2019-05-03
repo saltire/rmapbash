@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Edges<T> {
     pub n: T,
     pub e: T,

@@ -14,7 +14,7 @@ use regex::Regex;
 
 use super::nbt;
 use super::sizes::*;
-use super::types::Pair;
+use super::types::*;
 
 pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
     Regex::new(r"r\.([-\d]+)\.([-\d]+)\.mca$").unwrap()
@@ -76,13 +76,16 @@ fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
     })
 }
 
-pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
+pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[&str])
 -> Result<HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>, Error> {
-    let mut file = File::open(path)?;
     let mut blockmaps = HashMap::new();
+    if !path.exists() {
+        return Ok(blockmaps);
+    }
+    let mut file = File::open(path)?;
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in margins.n..(CHUNKS_IN_REGION as u8 - margins.s) {
+        for cx in margins.w..(CHUNKS_IN_REGION as u8 - margins.e) {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 // println!("Reading chunk {}, {}", cx, cz);
 
@@ -107,7 +110,7 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
                     for ptag in palette {
                         let pblock = ptag.to_hashmap()?;
                         let name = pblock["Name"].to_str()?;
-                        pblocks.push(block_names.iter().position(|b| b == &name).unwrap() as u16);
+                        pblocks.push(blocknames.iter().position(|b| b == &name).unwrap() as u16);
                     }
 
                     // BlockStates is an array of i64 representing 4096 blocks,
@@ -138,13 +141,16 @@ pub fn read_region_chunk_blocks(path: &Path, block_names: &[&str])
     Ok(blockmaps)
 }
 
-pub fn read_region_chunk_lightmaps(path: &Path)
+pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
 -> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>, Error> {
-    let mut file = File::open(path)?;
     let mut lightmaps = HashMap::new();
+    if !path.exists() {
+        return Ok(lightmaps)
+    }
+    let mut file = File::open(path)?;
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in margins.n..(CHUNKS_IN_REGION as u8 - margins.s) {
+        for cx in margins.w..(CHUNKS_IN_REGION as u8 - margins.e) {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 // println!("Reading chunk {}, {}", cx, cz);
 
@@ -181,8 +187,11 @@ pub fn read_region_chunk_lightmaps(path: &Path)
 
 pub fn read_region_chunk_biomes(path: &Path)
 -> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
-    let mut file = File::open(path)?;
     let mut biomes = HashMap::new();
+    if !path.exists() {
+        return Ok(biomes)
+    }
+    let mut file = File::open(path)?;
 
     for cz in 0..CHUNKS_IN_REGION as u8 {
         for cx in 0..CHUNKS_IN_REGION as u8 {
@@ -205,8 +214,11 @@ pub fn read_region_chunk_biomes(path: &Path)
 
 pub fn read_region_chunk_heightmaps(path: &Path)
 -> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
-    let mut file = File::open(path)?;
     let mut heightmaps = HashMap::new();
+    if !path.exists() {
+        return Ok(heightmaps)
+    }
+    let mut file = File::open(path)?;
 
     for cz in 0..CHUNKS_IN_REGION as u8 {
         for cx in 0..CHUNKS_IN_REGION as u8 {
