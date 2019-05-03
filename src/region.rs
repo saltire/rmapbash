@@ -10,9 +10,20 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use flate2::read::ZlibDecoder;
 
+use regex::Regex;
+
 use super::nbt;
 use super::sizes::*;
 use super::types::Pair;
+
+pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
+    Regex::new(r"r\.([-\d]+)\.([-\d]+)\.mca$").unwrap()
+        .captures(path_str)
+        .map(|caps| Pair {
+            x: caps.get(1).unwrap().as_str().parse::<i32>().unwrap(),
+            z: caps.get(2).unwrap().as_str().parse::<i32>().unwrap(),
+        })
+}
 
 pub fn read_region_chunks(path: &Path) -> Result<[bool; CHUNKS_IN_REGION_2D], Error> {
     let mut file = File::open(path)?;

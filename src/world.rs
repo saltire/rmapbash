@@ -1,8 +1,6 @@
 use std::io::{Error, ErrorKind};
 use std::path::Path;
 
-use regex::Regex;
-
 use super::region;
 use super::sizes::*;
 use super::types::{Edges, Pair};
@@ -43,14 +41,10 @@ pub fn read_world_regions(path: &Path) -> Result<Vec<Pair<i32>>, Error> {
     }
 
     let mut regions = Vec::new();
-    let re = Regex::new(r"^r\.([-\d]+)\.([-\d]+)\.mca$").unwrap();
-
     for entry in std::fs::read_dir(region_path)? {
         if let Some(filename) = entry?.file_name().to_str() {
-            if let Some(caps) = re.captures(filename) {
-                let rx = caps.get(1).unwrap().as_str().parse::<i32>().unwrap();
-                let rz = caps.get(2).unwrap().as_str().parse::<i32>().unwrap();
-                regions.push(Pair { x: rx, z: rz });
+            if let Some(r) = region::get_coords_from_path(filename) {
+                regions.push(r);
             }
         }
     }

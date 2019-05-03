@@ -102,7 +102,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 #[allow(dead_code)]
 pub fn draw_region_block_map(regionpath: &Path, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
-    println!("Creating block map from region file {}", regionpath.display());
+    let r = region::get_coords_from_path(regionpath.to_str().unwrap()).unwrap();
+    println!("Creating block map for region {}, {}", r.x, r.z);
 
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types();
