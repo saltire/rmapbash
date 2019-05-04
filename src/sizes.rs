@@ -1,4 +1,5 @@
 pub const BLOCKS_IN_CHUNK: usize = 16;
+pub const MAX_BLOCK_IN_CHUNK: usize = BLOCKS_IN_CHUNK - 1; // 15
 
 pub const BLOCKS_IN_SECTION_Y: usize = 16;
 pub const SECTIONS_IN_CHUNK_Y: usize = 16;
@@ -14,6 +15,7 @@ pub const BLOCKS_IN_SECTION_3D: usize = BLOCKS_IN_CHUNK_2D * BLOCKS_IN_SECTION_Y
 pub const CHUNKS_IN_REGION: usize = 32;
 pub const CHUNKS_IN_REGION_2D: usize = CHUNKS_IN_REGION * CHUNKS_IN_REGION; // 1024
 // pub const BLOCKS_IN_REGION: usize = CHUNKS_IN_REGION * BLOCKS_IN_CHUNK; // 512
+pub const MAX_CHUNK_IN_REGION: usize = CHUNKS_IN_REGION - 1; // 31
 
 pub const SECTOR_SIZE: usize = 4096;
 

@@ -18,8 +18,10 @@ fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
     }
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>, cblocks: &[u16],
-    clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
+    cblocks: &[u16], ncblocks: &Edges<&[u16; BLOCKS_IN_CHUNK_3D]>,
+    clights: &[u8], nclights: &Edges<&[u8; BLOCKS_IN_CHUNK_3D]>,
+    cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
     for bz in (0..BLOCKS_IN_CHUNK).rev() {
         for bx in (0..BLOCKS_IN_CHUNK).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -36,16 +38,36 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>, cblock
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
 
-                let light = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
+                let tlight = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
                     clights[bo3 + BLOCKS_IN_CHUNK_2D]
                 } else {
                     MAX_LIGHT_LEVEL
                 };
+                let llight = if *night {
+                    if bz == MAX_BLOCK_IN_CHUNK {
+                        nclights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
+                    } else {
+                        clights[bo3 + BLOCKS_IN_CHUNK]
+                    }
+                } else {
+                    MAX_LIGHT_LEVEL
+                };
+                let rlight = if *night {
+                    if bx == MAX_BLOCK_IN_CHUNK {
+                        nclights.e[bo3 - MAX_BLOCK_IN_CHUNK]
+                    } else {
+                        clights[bo3 + 1]
+                    }
+                } else {
+                    MAX_LIGHT_LEVEL
+                };
 
-                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][light as usize];
-                if blockcolor.a == 0 {
+                let tcolor = &blocktype.colors[cbiomes[bo2] as usize][tlight as usize];
+                if tcolor.a == 0 {
                     continue;
                 }
+                let lcolor = &blocktype.colors[cbiomes[bo2] as usize][llight as usize];
+                let rcolor = &blocktype.colors[cbiomes[bo2] as usize][rlight as usize];
 
                 let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
 
@@ -61,12 +83,20 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>, cblock
                             continue;
                         }
 
+                        let bcolor = if y < ISO_BLOCK_Y_MARGIN {
+                            &tcolor
+                        } else if x < ISO_BLOCK_X_MARGIN {
+                            &lcolor
+                        } else {
+                            &rcolor
+                        };
+
                         let pcolor = color::blend_alpha_color(&RGBA {
                             r: pixels[po],
                             g: pixels[po + 1],
                             b: pixels[po + 2],
                             a: pixels[po + 3],
-                        }, &blockcolor);
+                        }, bcolor);
                         pixels[po] = pcolor.r;
                         pixels[po + 1] = pcolor.g;
                         pixels[po + 2] = pcolor.b;
@@ -105,32 +135,32 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             i += 1;
             println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
             let regionpath = region::get_path_from_coords(worldpath, &r);
-            // let npaths = Edges {
-            //     n: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
-            //     s: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
-            //     w: region::get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
-            //     e: region::get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
-            // };
-            // let nmargins = Edges {
-            //     n: Edges { n: 31, s: 0, w: 0, e: 0 },
-            //     s: Edges { n: 0, s: 31, w: 0, e: 0 },
-            //     w: Edges { n: 0, s: 0, w: 31, e: 0 },
-            //     e: Edges { n: 0, s: 0, w: 0, e: 31 },
-            // };
+            let npaths = Edges {
+                n: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
+                s: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
+                w: region::get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
+                e: region::get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
+            };
+            let nmargins = Edges {
+                n: Edges { n: MAX_CHUNK_IN_REGION as u8, s: 0, w: 0, e: 0 },
+                s: Edges { n: 0, s: MAX_CHUNK_IN_REGION as u8, w: 0, e: 0 },
+                w: Edges { n: 0, s: 0, w: MAX_CHUNK_IN_REGION as u8, e: 0 },
+                e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION as u8 },
+            };
             let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
-            // let nrblocks = Edges {
-            //     n: region::read_region_chunk_blocks(npaths.n.as_path(), &nmargins.n, &blocknames)?,
-            //     s: region::read_region_chunk_blocks(npaths.s.as_path(), &nmargins.s, &blocknames)?,
-            //     w: region::read_region_chunk_blocks(npaths.w.as_path(), &nmargins.w, &blocknames)?,
-            //     e: region::read_region_chunk_blocks(npaths.e.as_path(), &nmargins.e, &blocknames)?,
-            // };
+            let nrblocks = Edges {
+                n: region::read_region_chunk_blocks(npaths.n.as_path(), &nmargins.n, &blocknames)?,
+                s: region::read_region_chunk_blocks(npaths.s.as_path(), &nmargins.s, &blocknames)?,
+                w: region::read_region_chunk_blocks(npaths.w.as_path(), &nmargins.w, &blocknames)?,
+                e: region::read_region_chunk_blocks(npaths.e.as_path(), &nmargins.e, &blocknames)?,
+            };
             let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
-            // let nrlights = Edges {
-            //     n: region::read_region_chunk_lightmaps(npaths.n.as_path(), &nmargins.n)?,
-            //     s: region::read_region_chunk_lightmaps(npaths.s.as_path(), &nmargins.s)?,
-            //     w: region::read_region_chunk_lightmaps(npaths.w.as_path(), &nmargins.w)?,
-            //     e: region::read_region_chunk_lightmaps(npaths.e.as_path(), &nmargins.e)?,
-            // };
+            let nrlights = Edges {
+                n: region::read_region_chunk_lightmaps(npaths.n.as_path(), &nmargins.n)?,
+                s: region::read_region_chunk_lightmaps(npaths.s.as_path(), &nmargins.s)?,
+                w: region::read_region_chunk_lightmaps(npaths.w.as_path(), &nmargins.w)?,
+                e: region::read_region_chunk_lightmaps(npaths.e.as_path(), &nmargins.e)?,
+            };
             let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
 
             println!("Drawing block map for region {}, {}", r.x, r.z);
@@ -152,20 +182,53 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
                     let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
                     let co = cpy * size.x + cpx;
 
-                    // let ncblocks = Edges {
-                    //     n: if cz == 0 { nrblocks.n[&Pair { x: cx, z: 31 }] } else { rblocks[&Pair { x: cx, z: cz - 1 }] },
-                    //     s: if cz == 31 { nrblocks.s[&Pair { x: cx, z: 0 }] } else { rblocks[&Pair { x: cx, z: cz + 1 }] },
-                    //     w: if cx == 0 { nrblocks.w[&Pair { x: 31, z: cz }] } else { rblocks[&Pair { x: cx - 1, z: cz }] },
-                    //     e: if cx == 31 { nrblocks.e[&Pair { x: 0, z: cz }] } else { rblocks[&Pair { x: cx + 1, z: cz }] },
-                    // };
-                    // let nclights = Edges {
-                    //     n: if cz == 0 { nrlights.n[&Pair { x: cx, z: 31 }] } else { rlights[&Pair { x: cx, z: cz - 1 }] },
-                    //     s: if cz == 31 { nrlights.s[&Pair { x: cx, z: 0 }] } else { rlights[&Pair { x: cx, z: cz + 1 }] },
-                    //     w: if cx == 0 { nrlights.w[&Pair { x: 31, z: cz }] } else { rlights[&Pair { x: cx - 1, z: cz }] },
-                    //     e: if cx == 31 { nrlights.e[&Pair { x: 0, z: cz }] } else { rlights[&Pair { x: cx + 1, z: cz }] },
-                    // };
+                    let ncblocks = Edges {
+                        n: if cz == 0 {
+                            nrblocks.n.get(&Pair { x: cx, z: MAX_CHUNK_IN_REGION as u8 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rblocks.get(&Pair { x: cx, z: cz - 1 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        },
+                        s: if cz == MAX_CHUNK_IN_REGION as u8 {
+                            nrblocks.s.get(&Pair { x: cx, z: 0 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rblocks.get(&Pair { x: cx, z: cz + 1 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        },
+                        w: if cx == 0 {
+                            nrblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rblocks.get(&Pair { x: cx - 1, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        },
+                        e: if cx == MAX_CHUNK_IN_REGION as u8 {
+                            nrblocks.e.get(&Pair { x: 0, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rblocks.get(&Pair { x: cx + 1, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                        },
+                    };
+                    let nclights = Edges {
+                        n: if cz == 0 {
+                            nrlights.n.get(&Pair { x: cx, z: MAX_CHUNK_IN_REGION as u8 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rlights.get(&Pair { x: cx, z: cz - 1 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        },
+                        s: if cz == MAX_CHUNK_IN_REGION as u8 {
+                            nrlights.s.get(&Pair { x: cx, z: 0 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rlights.get(&Pair { x: cx, z: cz + 1 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        },
+                        w: if cx == 0 {
+                            nrlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rlights.get(&Pair { x: cx - 1, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        },
+                        e: if cx == MAX_CHUNK_IN_REGION as u8 {
+                            nrlights.e.get(&Pair { x: 0, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        } else {
+                            rlights.get(&Pair { x: cx + 1, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                        },
+                    };
 
-                    draw_chunk(&mut pixels, &blocktypes, &rblocks[c], &rlights[c], &rbiomes[c],
+                    draw_chunk(&mut pixels, &blocktypes,
+                        &rblocks[c], &ncblocks, &rlights[c], &nclights, &rbiomes[c],
                         &co, &size.x, &night);
                 }
             }
@@ -181,24 +244,24 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
 #[allow(dead_code)]
 pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
-    println!("Creating block map for region {}, {}", r.x, r.z);
-    let regionpath = region::get_path_from_coords(worldpath, r);
-    // let npaths = Edges {
-    //     n: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
-    //     s: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
-    //     w: region::get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
-    //     e: region::get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
-    // };
-    // let nmargins = Edges {
-    //     n: Edges { n: 31, s: 0, w: 0, e: 0 },
-    //     s: Edges { n: 0, s: 31, w: 0, e: 0 },
-    //     w: Edges { n: 0, s: 0, w: 31, e: 0 },
-    //     e: Edges { n: 0, s: 0, w: 0, e: 31 },
-    // };
-
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types();
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
+
+    println!("Creating block map for region {}, {}", r.x, r.z);
+    let regionpath = region::get_path_from_coords(worldpath, r);
+    let npaths = Edges {
+        n: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
+        s: region::get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
+        w: region::get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
+        e: region::get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
+    };
+    let nmargins = Edges {
+        n: Edges { n: MAX_CHUNK_IN_REGION as u8, s: 0, w: 0, e: 0 },
+        s: Edges { n: 0, s: MAX_CHUNK_IN_REGION as u8, w: 0, e: 0 },
+        w: Edges { n: 0, s: 0, w: MAX_CHUNK_IN_REGION as u8, e: 0 },
+        e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION as u8 },
+    };
 
     println!("Reading blocks");
     let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
@@ -206,23 +269,23 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
         println!("No chunks in region.");
         return Ok(());
     }
-    // println!("Reading neighbouring blocks");
-    // let nrblocks = Edges {
-    //     n: region::read_region_chunk_blocks(npaths.n.as_path(), &nmargins.n, &blocknames)?,
-    //     s: region::read_region_chunk_blocks(npaths.s.as_path(), &nmargins.s, &blocknames)?,
-    //     w: region::read_region_chunk_blocks(npaths.w.as_path(), &nmargins.w, &blocknames)?,
-    //     e: region::read_region_chunk_blocks(npaths.e.as_path(), &nmargins.e, &blocknames)?,
-    // };
+    println!("Reading neighbouring blocks");
+    let nrblocks = Edges {
+        n: region::read_region_chunk_blocks(npaths.n.as_path(), &nmargins.n, &blocknames)?,
+        s: region::read_region_chunk_blocks(npaths.s.as_path(), &nmargins.s, &blocknames)?,
+        w: region::read_region_chunk_blocks(npaths.w.as_path(), &nmargins.w, &blocknames)?,
+        e: region::read_region_chunk_blocks(npaths.e.as_path(), &nmargins.e, &blocknames)?,
+    };
 
     println!("Reading light maps");
     let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
-    // println!("Reading neighbouring light maps");
-    // let nrlights = Edges {
-    //     n: region::read_region_chunk_lightmaps(npaths.n.as_path(), &nmargins.n)?,
-    //     s: region::read_region_chunk_lightmaps(npaths.s.as_path(), &nmargins.s)?,
-    //     w: region::read_region_chunk_lightmaps(npaths.w.as_path(), &nmargins.w)?,
-    //     e: region::read_region_chunk_lightmaps(npaths.e.as_path(), &nmargins.e)?,
-    // };
+    println!("Reading neighbouring light maps");
+    let nrlights = Edges {
+        n: region::read_region_chunk_lightmaps(npaths.n.as_path(), &nmargins.n)?,
+        s: region::read_region_chunk_lightmaps(npaths.s.as_path(), &nmargins.s)?,
+        w: region::read_region_chunk_lightmaps(npaths.w.as_path(), &nmargins.w)?,
+        e: region::read_region_chunk_lightmaps(npaths.e.as_path(), &nmargins.e)?,
+    };
 
     println!("Reading biomes");
     let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
@@ -257,20 +320,53 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
             let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
             let co = cpy * size.x + cpx;
 
-            // let ncblocks = Edges {
-            //     n: if cz == 0 { nrblocks.n[&Pair { x: cx, z: 31 }] } else { rblocks[&Pair { x: cx, z: cz - 1 }] },
-            //     s: if cz == 31 { nrblocks.s[&Pair { x: cx, z: 0 }] } else { rblocks[&Pair { x: cx, z: cz + 1 }] },
-            //     w: if cx == 0 { nrblocks.w[&Pair { x: 31, z: cz }] } else { rblocks[&Pair { x: cx - 1, z: cz }] },
-            //     e: if cx == 31 { nrblocks.e[&Pair { x: 0, z: cz }] } else { rblocks[&Pair { x: cx + 1, z: cz }] },
-            // };
-            // let nclights = Edges {
-            //     n: if cz == 0 { nrlights.n[&Pair { x: cx, z: 31 }] } else { rlights[&Pair { x: cx, z: cz - 1 }] },
-            //     s: if cz == 31 { nrlights.s[&Pair { x: cx, z: 0 }] } else { rlights[&Pair { x: cx, z: cz + 1 }] },
-            //     w: if cx == 0 { nrlights.w[&Pair { x: 31, z: cz }] } else { rlights[&Pair { x: cx - 1, z: cz }] },
-            //     e: if cx == 31 { nrlights.e[&Pair { x: 0, z: cz }] } else { rlights[&Pair { x: cx + 1, z: cz }] },
-            // };
+            let ncblocks = Edges {
+                n: if cz == 0 {
+                    nrblocks.n.get(&Pair { x: cx, z: MAX_CHUNK_IN_REGION as u8 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rblocks.get(&Pair { x: cx, z: cz - 1 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                },
+                s: if cz == MAX_CHUNK_IN_REGION as u8 {
+                    nrblocks.s.get(&Pair { x: cx, z: 0 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rblocks.get(&Pair { x: cx, z: cz + 1 }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                },
+                w: if cx == 0 {
+                    nrblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rblocks.get(&Pair { x: cx - 1, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                },
+                e: if cx == MAX_CHUNK_IN_REGION as u8 {
+                    nrblocks.e.get(&Pair { x: 0, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rblocks.get(&Pair { x: cx + 1, z: cz }).unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+                },
+            };
+            let nclights = Edges {
+                n: if cz == 0 {
+                    nrlights.n.get(&Pair { x: cx, z: MAX_CHUNK_IN_REGION as u8 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rlights.get(&Pair { x: cx, z: cz - 1 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                },
+                s: if cz == MAX_CHUNK_IN_REGION as u8 {
+                    nrlights.s.get(&Pair { x: cx, z: 0 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rlights.get(&Pair { x: cx, z: cz + 1 }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                },
+                w: if cx == 0 {
+                    nrlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rlights.get(&Pair { x: cx - 1, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                },
+                e: if cx == MAX_CHUNK_IN_REGION as u8 {
+                    nrlights.e.get(&Pair { x: 0, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                } else {
+                    rlights.get(&Pair { x: cx + 1, z: cz }).unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                },
+            };
 
-            draw_chunk(&mut pixels, &blocktypes, &rblocks[c], &rlights[c], &rbiomes[c],
+            draw_chunk(&mut pixels, &blocktypes,
+                &rblocks[c], &ncblocks, &rlights[c], &nclights, &rbiomes[c],
                 &co, &size.x, &night);
         }
     }
