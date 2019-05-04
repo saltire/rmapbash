@@ -16,6 +16,14 @@ use super::nbt;
 use super::sizes::*;
 use super::types::*;
 
+pub struct Region {
+    pub blocks: HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>,
+    pub nblocks: Edges<HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>>,
+    pub lights: HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>,
+    pub nlights: Edges<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>>,
+    pub biomes: HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>,
+}
+
 pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
     Regex::new(r"r\.([-\d]+)\.([-\d]+)\.mca$").unwrap()
         .captures(path_str)
@@ -248,4 +256,40 @@ pub fn read_region_chunk_heightmaps(path: &Path)
     }
 
     Ok(heightmaps)
+}
+
+pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &Vec<&str>)
+-> Result<Region, Box<Error>> {
+    let regionpath = get_path_from_coords(worldpath, &r);
+
+    let npaths = Edges {
+        n: get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
+        s: get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
+        w: get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
+        e: get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
+    };
+    let nmargins = Edges {
+        n: Edges { n: MAX_CHUNK_IN_REGION as u8, s: 0, w: 0, e: 0 },
+        s: Edges { n: 0, s: MAX_CHUNK_IN_REGION as u8, w: 0, e: 0 },
+        w: Edges { n: 0, s: 0, w: MAX_CHUNK_IN_REGION as u8, e: 0 },
+        e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION as u8 },
+    };
+
+    Ok(Region {
+        blocks: read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), blocknames)?,
+        nblocks: Edges {
+            n: read_region_chunk_blocks(npaths.n.as_path(), &nmargins.n, blocknames)?,
+            s: read_region_chunk_blocks(npaths.s.as_path(), &nmargins.s, blocknames)?,
+            w: read_region_chunk_blocks(npaths.w.as_path(), &nmargins.w, blocknames)?,
+            e: read_region_chunk_blocks(npaths.e.as_path(), &nmargins.e, blocknames)?,
+        },
+        lights: read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?,
+        nlights: Edges {
+            n: read_region_chunk_lightmaps(npaths.n.as_path(), &nmargins.n)?,
+            s: read_region_chunk_lightmaps(npaths.s.as_path(), &nmargins.s)?,
+            w: read_region_chunk_lightmaps(npaths.w.as_path(), &nmargins.w)?,
+            e: read_region_chunk_lightmaps(npaths.e.as_path(), &nmargins.e)?,
+        },
+        biomes: read_region_chunk_biomes(regionpath.as_path())?,
+    })
 }
