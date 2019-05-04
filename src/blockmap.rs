@@ -11,7 +11,7 @@ use super::types::*;
 use super::world;
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize, night: &bool) {
+    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -25,14 +25,14 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
                 let blocktype = &blocktypes[cblocks[bo3] as usize];
 
-                let light = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
-                    clights[bo3 + BLOCKS_IN_CHUNK_2D]
-                } else {
+                let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
                     MAX_LIGHT_LEVEL
+                } else {
+                    clights[bo3 + BLOCKS_IN_CHUNK_2D]
                 };
-
-                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][light as usize];
-
+                let tslight = (tlight & 0x0f) as usize;
+                let tblight = ((tlight & 0xf0) >> 4) as usize;
+                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][tslight][tblight];
                 if blockcolor.a == 0 {
                     continue;
                 }
@@ -62,7 +62,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
     let size = world.get_ortho_size();
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    let blocktypes = blocktypes::get_block_types();
+    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let mut i = 0;
@@ -86,8 +86,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
             let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
             let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
-                &night);
+            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
         }
     }
 
@@ -104,7 +103,7 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, ni
     let regionpath = region::get_path_from_coords(worldpath, &r);
 
     println!("Getting block types");
-    let blocktypes = blocktypes::get_block_types();
+    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading blocks");
@@ -140,8 +139,7 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, ni
         let acz = (c.z - climits.n) as usize;
         let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x,
-            &night);
+        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
     }
 
     let file = File::create(outpath)?;

@@ -6,7 +6,8 @@ pub struct RGBA {
     pub a: u8,
 }
 
-struct RGB {
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RGB {
     pub r: u8,
     pub g: u8,
     pub b: u8,
@@ -17,9 +18,6 @@ struct HSV {
     pub s: f64,
     pub v: f64,
 }
-
-const BLOCKLIGHT_MIN: f64 = 0.17;
-const BLOCKLIGHT_MULT: f64 = 1.0 - BLOCKLIGHT_MIN;
 
 fn rgb2hsv(rgb: &RGB) -> HSV {
     let r: f64 = rgb.r as f64 / 255.0;
@@ -148,12 +146,11 @@ pub fn blend_alpha_color(top: &RGBA, bottom: &RGBA) -> RGBA {
     }
 }
 
-pub fn set_light_level(color: &RGBA, level: &u8) -> RGBA {
-    let llevel = *level as f64 * BLOCKLIGHT_MULT / 15.0 + BLOCKLIGHT_MIN;
+pub fn set_light_color(blockcolor: &RGBA, lightcolor: &RGB) -> RGBA {
     RGBA {
-        r: (color.r as f64 * llevel) as u8,
-        g: (color.g as f64 * llevel) as u8,
-        b: (color.b as f64 * llevel) as u8,
-        a: color.a,
+        r: (blockcolor.r as f64 * lightcolor.r as f64 / 255.0) as u8,
+        g: (blockcolor.g as f64 * lightcolor.g as f64 / 255.0) as u8,
+        b: (blockcolor.b as f64 * lightcolor.b as f64 / 255.0) as u8,
+        a: blockcolor.a,
     }
 }

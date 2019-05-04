@@ -4,8 +4,7 @@ import os
 from PIL import Image
 
 
-# datadir = '[path to contents of extracted minecraft version .jar file]'
-datadir = '/c/Users/marcus/AppData/Roaming/.minecraft/versions/1.14/1.14'
+datadir = '[path to contents of extracted minecraft version .jar file]'
 blocktexdir = datadir + '/assets/minecraft/textures/block/'
 
 currentdir = os.path.dirname(__file__)

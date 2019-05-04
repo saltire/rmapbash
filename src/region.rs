@@ -157,6 +157,8 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
     }
     let mut file = File::open(path)?;
 
+    let bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
+
     for cz in margins.n..(CHUNKS_IN_REGION as u8 - margins.s) {
         for cx in margins.w..(CHUNKS_IN_REGION as u8 - margins.e) {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
@@ -166,22 +168,31 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                 if nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_none() { continue; }
                 let slen = nbt::read_list_length(&mut reader)?;
 
+                // Default to 0x0f: blocklight (top 4 bits) at 0, skylight (bottom 4 bits) at max.
                 let mut lights = [0u8; BLOCKS_IN_CHUNK_3D];
 
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
-                        vec!["Y", "BlockLight"])?;
-                    if !section.contains_key("BlockLight") {
+                        vec!["Y", "BlockLight", "SkyLight"])?;
+                    let y = section["Y"].to_u8()?;
+
+                    if *y > MAX_SECTION_IN_CHUNK_Y as u8 ||
+                        !section.contains_key("BlockLight") && !section.contains_key("SkyLight") {
                         continue;
                     }
 
-                    let y = section["Y"].to_u8()?;
-                    let bytes = section["BlockLight"].to_u8_array()?;
                     let so = *y as usize * BLOCKS_IN_SECTION_3D;
 
+                    let bbytes = section.get("BlockLight")
+                        .map_or(&bytes_default, |tag| tag.to_u8_array().unwrap());
+                    let sbytes = section.get("SkyLight")
+                        .map_or(&bytes_default, |tag| tag.to_u8_array().unwrap());
+
                     for i in 0..(BLOCKS_IN_SECTION_3D / 2) {
-                        lights[so + i * 2] = bytes[i] & 0x0f;
-                        lights[so + i * 2 + 1] = bytes[i] >> 4;
+                        // The bottom half of each byte, moving blocklight to the top.
+                        lights[so + i * 2] = ((bbytes[i] & 0x0f) << 4) | (sbytes[i] & 0x0f);
+                        // The top half of each byte, moving skylight to the bottom.
+                        lights[so + i * 2 + 1] = (bbytes[i] & 0xf0) | (sbytes[i] >> 4);
                     }
                 }
 

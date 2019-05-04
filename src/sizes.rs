@@ -3,6 +3,7 @@ pub const MAX_BLOCK_IN_CHUNK: usize = BLOCKS_IN_CHUNK - 1; // 15
 
 pub const BLOCKS_IN_SECTION_Y: usize = 16;
 pub const SECTIONS_IN_CHUNK_Y: usize = 16;
+pub const MAX_SECTION_IN_CHUNK_Y: usize = SECTIONS_IN_CHUNK_Y - 1; // 15
 pub const BLOCKS_IN_CHUNK_Y: usize = BLOCKS_IN_SECTION_Y * SECTIONS_IN_CHUNK_Y; // 256
 pub const MAX_BLOCK_IN_CHUNK_Y: usize = BLOCKS_IN_CHUNK_Y - 1; // 255
 

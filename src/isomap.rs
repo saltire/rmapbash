@@ -95,7 +95,7 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
 }
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    chunk: &Chunk, co: &usize, width: &usize, night: &bool) {
+    chunk: &Chunk, co: &usize, width: &usize) {
     for bz in (0..BLOCKS_IN_CHUNK).rev() {
         for bx in (0..BLOCKS_IN_CHUNK).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -112,36 +112,35 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
                 let blocktype = &blocktypes[chunk.blocks[bo3] as usize];
 
-                let tlight = if *night && by < MAX_BLOCK_IN_CHUNK_Y {
+                let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
+                    MAX_LIGHT_LEVEL
+                } else {
                     chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D]
-                } else {
-                    MAX_LIGHT_LEVEL
                 };
-                let llight = if *night {
-                    if bz == MAX_BLOCK_IN_CHUNK {
-                        chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
-                    } else {
-                        chunk.lights[bo3 + BLOCKS_IN_CHUNK]
-                    }
-                } else {
-                    MAX_LIGHT_LEVEL
-                };
-                let rlight = if *night {
-                    if bx == MAX_BLOCK_IN_CHUNK {
-                        chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK]
-                    } else {
-                        chunk.lights[bo3 + 1]
-                    }
-                } else {
-                    MAX_LIGHT_LEVEL
-                };
-
-                let tcolor = &blocktype.colors[chunk.biomes[bo2] as usize][tlight as usize];
+                let tslight = (tlight & 0x0f) as usize;
+                let tblight = ((tlight & 0xf0) >> 4) as usize;
+                let tcolor = &blocktype.colors[chunk.biomes[bo2] as usize][tslight][tblight];
                 if tcolor.a == 0 {
                     continue;
                 }
-                let lcolor = &blocktype.colors[chunk.biomes[bo2] as usize][llight as usize];
-                let rcolor = &blocktype.colors[chunk.biomes[bo2] as usize][rlight as usize];
+
+                let llight = if bz == MAX_BLOCK_IN_CHUNK {
+                    chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
+                } else {
+                    chunk.lights[bo3 + BLOCKS_IN_CHUNK]
+                };
+                let lslight = (llight & 0x0f) as usize;
+                let lblight = ((llight & 0xf0) >> 4) as usize;
+                let lcolor = &blocktype.colors[chunk.biomes[bo2] as usize][lslight][lblight];
+
+                let rlight = if bx == MAX_BLOCK_IN_CHUNK {
+                    chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK]
+                } else {
+                    chunk.lights[bo3 + 1]
+                };
+                let rslight = (rlight & 0x0f) as usize;
+                let rblight = ((rlight & 0xf0) >> 4) as usize;
+                let rcolor = &blocktype.colors[chunk.biomes[bo2] as usize][rslight][rblight];
 
                 let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
 
@@ -193,7 +192,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
     let size = get_iso_size(&csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    let blocktypes = blocktypes::get_block_types();
+    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let mut i = 0;
@@ -230,7 +229,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
                     let co = cpy * size.x + cpx;
 
                     let chunk = get_chunk_data(&reg, &c);
-                    draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x, &night);
+                    draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
                 }
             }
         }
@@ -246,7 +245,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
 pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, night: bool)
 -> Result<(), Box<Error>> {
     println!("Getting block types");
-    let blocktypes = blocktypes::get_block_types();
+    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     println!("Reading block data for region {}, {}", r.x, r.z);
@@ -283,7 +282,7 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
             let co = cpy * size.x + cpx;
 
             let chunk = get_chunk_data(&reg, &c);
-            draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x, &night);
+            draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
         }
     }
 

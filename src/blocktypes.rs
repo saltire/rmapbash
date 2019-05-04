@@ -6,11 +6,11 @@ use serde::Deserialize;
 
 use super::biometypes;
 use super::color;
-use super::color::RGBA;
+use super::color::{RGBA, RGB};
 use super::sizes::*;
 
 #[derive(Deserialize)]
-struct Row {
+struct BlockRow {
     name: String,
     r: Option<u8>,
     g: Option<u8>,
@@ -19,9 +19,18 @@ struct Row {
     biome: Option<u8>,
 }
 
+#[derive(Deserialize)]
+struct LightRow {
+    sky: Option<usize>,
+    block:Option<usize>,
+    r: Option<u8>,
+    g: Option<u8>,
+    b: Option<u8>,
+}
+
 pub struct BlockType {
     pub name: String,
-    pub colors: [[RGBA; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
+    pub colors: [[[RGBA; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
     // pub alpha: u8,
 }
 
@@ -31,16 +40,28 @@ impl PartialEq for BlockType {
     }
 }
 
-pub fn get_block_types() -> Vec<BlockType> {
-    let biome_types = biometypes::get_biome_types();
-
-    let csvpath = Path::new("./resources/blocks.csv");
-    let mut reader = Reader::from_path(csvpath).unwrap();
+pub fn get_block_types(night: &bool) -> Vec<BlockType> {
     let mut blocktypes = Vec::new();
 
-    let rows: Vec<Row> = reader.deserialize().map(|res| res.unwrap()).collect();
+    let biome_types = biometypes::get_biome_types();
 
-    for row in &rows {
+    let lightfile = format!("./resources/{}.csv", if *night { "night" } else { "day" });
+    let lightpath = Path::new(&lightfile);
+    let mut lightreader = Reader::from_path(lightpath).unwrap();
+    let lightrows: Vec<LightRow> = lightreader.deserialize().map(|res| res.unwrap()).collect();
+    let mut light = [[RGB::default(); LIGHT_LEVELS]; LIGHT_LEVELS];
+    for row in &lightrows {
+        light[row.sky.unwrap()][row.block.unwrap()] = RGB {
+            r: row.r.unwrap(),
+            g: row.g.unwrap(),
+            b: row.b.unwrap(),
+        };
+    }
+
+    let blockpath = Path::new("./resources/blocks.csv");
+    let mut blockreader = Reader::from_path(blockpath).unwrap();
+    let blockrows: Vec<BlockRow> = blockreader.deserialize().map(|res| res.unwrap()).collect();
+    for row in &blockrows {
         let block_color = RGBA {
             r: row.r.unwrap_or(0),
             g: row.g.unwrap_or(0),
@@ -50,7 +71,7 @@ pub fn get_block_types() -> Vec<BlockType> {
 
         let biome_color_type = row.biome.unwrap_or(0);
 
-        let mut block_colors = [[RGBA::default(); LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
+        let mut blockcolors = [[[RGBA::default(); LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
         for biome in &biome_types {
             let biome_color = match biome_color_type {
                 1 => color::shade_biome_color(&block_color, &biome.foliage),
@@ -59,16 +80,17 @@ pub fn get_block_types() -> Vec<BlockType> {
                 _ => block_color.clone(),
             };
 
-            for ll in 0..LIGHT_LEVELS {
-                block_colors[biome.id as usize][ll] =
-                    color::set_light_level(&biome_color, &(ll as u8));
+            for sl in 0..LIGHT_LEVELS {
+                for bl in 0..LIGHT_LEVELS {
+                    blockcolors[biome.id as usize][sl][bl] =
+                        color::set_light_color(&biome_color, &light[sl][bl]);
+                }
             }
-
         }
 
         blocktypes.push(BlockType {
             name: format!("minecraft:{}", row.name),
-            colors: block_colors,
+            colors: blockcolors,
             // alpha: block_color.a,
         });
     }
