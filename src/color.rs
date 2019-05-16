@@ -154,3 +154,19 @@ pub fn set_light_color(blockcolor: &RGBA, lightcolor: &RGB) -> RGBA {
         a: blockcolor.a,
     }
 }
+
+pub fn adjust_brightness(color: &RGBA, amt: &f64) -> RGBA {
+    if color.a == 0 {
+        return *color;
+    }
+
+    RGBA {
+        r: (color.r as f64 + amt * if *amt < 0.0 { color.r } else { 255 - color.r } as f64)
+            .min(255.0).max(0.0) as u8,
+        g: (color.g as f64 + amt * if *amt < 0.0 { color.g } else { 255 - color.g } as f64)
+            .min(255.0).max(0.0) as u8,
+        b: (color.b as f64 + amt * if *amt < 0.0 { color.b } else { 255 - color.b } as f64)
+            .min(255.0).max(0.0) as u8,
+        a: color.a,
+    }
+}

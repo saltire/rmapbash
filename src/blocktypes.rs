@@ -30,7 +30,7 @@ struct LightRow {
 
 pub struct BlockType {
     pub name: String,
-    pub colors: [[[RGBA; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
+    pub colors: [[[[RGBA; 3]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
     // pub alpha: u8,
 }
 
@@ -39,6 +39,8 @@ impl PartialEq for BlockType {
         self.name == other.name
     }
 }
+
+const BRIGHTNESS_ADJUST: f64 = 0.1;
 
 pub fn get_block_types(night: &bool) -> Vec<BlockType> {
     let mut blocktypes = Vec::new();
@@ -71,7 +73,7 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
 
         let biome_color_type = row.biome.unwrap_or(0);
 
-        let mut blockcolors = [[[RGBA::default(); LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
+        let mut blockcolors = [[[[RGBA::default(); 3]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
         for biome in &biome_types {
             let biome_color = match biome_color_type {
                 1 => color::shade_biome_color(&block_color, &biome.foliage),
@@ -82,8 +84,12 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
 
             for sl in 0..LIGHT_LEVELS {
                 for bl in 0..LIGHT_LEVELS {
-                    blockcolors[biome.id as usize][sl][bl] =
-                        color::set_light_color(&biome_color, &light[sl][bl]);
+                    let lit_block_color = color::set_light_color(&biome_color, &light[sl][bl]);
+                    blockcolors[biome.id as usize][sl][bl][0] = lit_block_color;
+                    blockcolors[biome.id as usize][sl][bl][1] =
+                        color::adjust_brightness(&lit_block_color, &BRIGHTNESS_ADJUST);
+                    blockcolors[biome.id as usize][sl][bl][2] =
+                        color::adjust_brightness(&lit_block_color, &-BRIGHTNESS_ADJUST);
                 }
             }
         }

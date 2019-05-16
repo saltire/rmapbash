@@ -13,7 +13,7 @@ use super::world;
 
 struct Chunk<'a> {
     blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
-    // nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
+    nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
     lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
     nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
     biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
@@ -29,36 +29,36 @@ fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
 fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
     Chunk {
         blocks: &reg.blocks[c],
-        // nblocks: Edges {
-        //     n: if c.z == 0 {
-        //         reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     } else {
-        //         reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     },
-        //     s: if c.z == MAX_CHUNK_IN_REGION as u8 {
-        //         reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     } else {
-        //         reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     },
-        //     w: if c.x == 0 {
-        //         reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     } else {
-        //         reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     },
-        //     e: if c.x == MAX_CHUNK_IN_REGION as u8 {
-        //         reg.nblocks.e.get(&Pair { x: 0, z: c.z })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     } else {
-        //         reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
-        //             .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-        //     },
-        // },
+        nblocks: Edges {
+            n: if c.z == 0 {
+                reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            } else {
+                reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            },
+            s: if c.z == MAX_CHUNK_IN_REGION as u8 {
+                reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            } else {
+                reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            },
+            w: if c.x == 0 {
+                reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            } else {
+                reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            },
+            e: if c.x == MAX_CHUNK_IN_REGION as u8 {
+                reg.nblocks.e.get(&Pair { x: 0, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            } else {
+                reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            },
+        },
         lights: &reg.lights[c],
         nlights: Edges {
             n: if c.z == 0 {
@@ -104,13 +104,16 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 (bx as i16 - bz as i16 - 1) * ISO_BLOCK_X_MARGIN as i16) as usize;
             let bpy2 = (bx + bz) * ISO_BLOCK_Y_MARGIN;
 
+            let biome = chunk.biomes[bo2] as usize;
+
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                if chunk.blocks[bo3] == 0 {
+                let block = chunk.blocks[bo3] as usize;
+                if block == 0 {
                     continue;
                 }
 
-                let blocktype = &blocktypes[chunk.blocks[bo3] as usize];
+                let blocktype = &blocktypes[block];
 
                 let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
                     MAX_LIGHT_LEVEL
@@ -119,11 +122,19 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let tcolor = &blocktype.colors[chunk.biomes[bo2] as usize][tslight][tblight];
+                let tcolor = &blocktype.colors[biome][tslight][tblight][0];
                 if tcolor.a == 0 {
                     continue;
                 }
 
+                // TODO: once we implement shapes, add hilight/shadow when the adjacent block
+                // has skylight and isn't a solid shape (i.e., has gaps).
+
+                let lblock = if bz == MAX_BLOCK_IN_CHUNK {
+                    chunk.nblocks.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
+                } else {
+                    chunk.blocks[bo3 + BLOCKS_IN_CHUNK]
+                } as usize;
                 let llight = if bz == MAX_BLOCK_IN_CHUNK {
                     chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
                 } else {
@@ -131,8 +142,15 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let lslight = (llight & 0x0f) as usize;
                 let lblight = ((llight & 0xf0) >> 4) as usize;
-                let lcolor = &blocktype.colors[chunk.biomes[bo2] as usize][lslight][lblight];
+                // Add a hilight if block to the left has skylight and is not the same as this one.
+                let lshade = if lslight > 0 && lblock != block { 1 } else { 0 };
+                let lcolor = &blocktype.colors[biome][lslight][lblight][lshade];
 
+                let rblock = if bx == MAX_BLOCK_IN_CHUNK {
+                    chunk.nblocks.e[bo3 - MAX_BLOCK_IN_CHUNK]
+                } else {
+                    chunk.blocks[bo3 + 1]
+                } as usize;
                 let rlight = if bx == MAX_BLOCK_IN_CHUNK {
                     chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK]
                 } else {
@@ -140,7 +158,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let rslight = (rlight & 0x0f) as usize;
                 let rblight = ((rlight & 0xf0) >> 4) as usize;
-                let rcolor = &blocktype.colors[chunk.biomes[bo2] as usize][rslight][rblight];
+                // Add a shadow if block to the right has skylight and is not the same as this one.
+                let rshade = if rslight > 0 && rblock != block { 2 } else { 0 };
+                let rcolor = &blocktype.colors[biome][rslight][rblight][rshade];
 
                 let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
 
