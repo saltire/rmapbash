@@ -169,7 +169,7 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                 let slen = nbt::read_list_length(&mut reader)?;
 
                 // Default to 0x0f: blocklight (top 4 bits) at 0, skylight (bottom 4 bits) at max.
-                let mut lights = [0u8; BLOCKS_IN_CHUNK_3D];
+                let mut lights = [0x0fu8; BLOCKS_IN_CHUNK_3D];
 
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
