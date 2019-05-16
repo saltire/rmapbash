@@ -1,0 +1,48 @@
+empty
+solid shadows
+solid no shadows
+flat
+small square shadows
+small square no shadows
+grass
+alternate colour bottom half
+half block
+inverted half block
+stairs north
+stairs east
+stairs south
+stairs west
+stairs inverted north
+stairs inverted east
+stairs inverted south
+stairs inverted west
+small flat
+alternate colour sides
+alternate colour left side
+alternate colour right side
+inverted flat
+flat with alternate colour
+fence
+fire
+ladder facing north
+ladder facing east
+ladder facing south
+ladder facing west
+vines north
+vines east
+vines south
+vines west
+vines north + east
+vines east + south
+vines south + west
+vines west + north
+vines north + south
+vines east + west
+vines north + east + south
+vines east + south + west
+vines south + west + north
+vines west + north + east
+vines north + east + south + west
+rod upright
+rod north-south
+rod east-west
