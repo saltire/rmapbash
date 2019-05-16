@@ -19,11 +19,10 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                if cblocks[bo3] == 0 {
+                let blocktype = &blocktypes[cblocks[bo3] as usize];
+                if blocktype.empty {
                     continue;
                 }
-
-                let blocktype = &blocktypes[cblocks[bo3] as usize];
 
                 let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
                     MAX_LIGHT_LEVEL
@@ -32,10 +31,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][tslight][tblight][0];
-                if blockcolor.a == 0 {
-                    continue;
-                }
+                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][tslight][tblight][1];
 
                 color = color::blend_alpha_color(&color, blockcolor);
                 if color.a == MAX_CHANNEL_VALUE {

@@ -109,11 +109,10 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 let block = chunk.blocks[bo3] as usize;
-                if block == 0 {
+                let blocktype = &blocktypes[block];
+                if blocktype.empty {
                     continue;
                 }
-
-                let blocktype = &blocktypes[block];
 
                 let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
                     MAX_LIGHT_LEVEL
@@ -122,10 +121,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let tcolor = &blocktype.colors[biome][tslight][tblight][0];
-                if tcolor.a == 0 {
-                    continue;
-                }
+                let tcolor = &blocktype.colors[biome][tslight][tblight][1];
+                let tcolor2 = &blocktype.colors[biome][tslight][tblight][4];
 
                 // TODO: once we implement shapes, add hilight/shadow when the adjacent block
                 // has skylight and isn't a solid shape (i.e., has gaps).
@@ -143,8 +140,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let lslight = (llight & 0x0f) as usize;
                 let lblight = ((llight & 0xf0) >> 4) as usize;
                 // Add a hilight if block to the left has skylight and is not the same as this one.
-                let lshade = if lslight > 0 && lblock != block { 1 } else { 0 };
+                let lshade = if lslight > 0 && lblock != block { 2 } else { 1 };
                 let lcolor = &blocktype.colors[biome][lslight][lblight][lshade];
+                let lcolor2 = &blocktype.colors[biome][lslight][lblight][lshade + 3];
 
                 let rblock = if bx == MAX_BLOCK_IN_CHUNK {
                     chunk.nblocks.e[bo3 - MAX_BLOCK_IN_CHUNK]
@@ -159,8 +157,13 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let rslight = (rlight & 0x0f) as usize;
                 let rblight = ((rlight & 0xf0) >> 4) as usize;
                 // Add a shadow if block to the right has skylight and is not the same as this one.
-                let rshade = if rslight > 0 && rblock != block { 2 } else { 0 };
+                let rshade = if rslight > 0 && rblock != block { 3 } else { 1 };
                 let rcolor = &blocktype.colors[biome][rslight][rblight][rshade];
+                let rcolor2 = &blocktype.colors[biome][rslight][rblight][rshade + 3];
+
+                // Create an index of colors corresponding to the digits in the block shape.
+                let bcolors = [&RGBA::default(),
+                    &tcolor, &lcolor, &rcolor, &tcolor2, &lcolor2, &rcolor2];
 
                 let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
 
@@ -176,20 +179,12 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                             continue;
                         }
 
-                        let bcolor = if y < ISO_BLOCK_Y_MARGIN {
-                            &tcolor
-                        } else if x < ISO_BLOCK_X_MARGIN {
-                            &lcolor
-                        } else {
-                            &rcolor
-                        };
-
                         let pcolor = color::blend_alpha_color(&RGBA {
                             r: pixels[po],
                             g: pixels[po + 1],
                             b: pixels[po + 2],
                             a: pixels[po + 3],
-                        }, bcolor);
+                        }, bcolors[blocktype.shape[x][y]]);
                         pixels[po] = pcolor.r;
                         pixels[po + 1] = pcolor.g;
                         pixels[po + 2] = pcolor.b;

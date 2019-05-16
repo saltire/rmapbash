@@ -654,7 +654,7 @@ vine,north=false&east=true&south=true&west=true,vines east + south + west
 vine,north=true&east=false&south=true&west=true,vines south + west + north
 vine,north=true&east=true&south=false&west=true,vines west + north + east
 vine,north=true&east=true&south=true&west=true,vines north + east + south + west
-vine,north=false&east=false&south=false&west=false,empty
+vine,north=false&east=false&south=false&west=false,vines north + east + south + west
 void_air,,empty
 wall_sign,,
 wall_torch,,
