@@ -63,31 +63,31 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
         nlights: Edges {
             n: if c.z == 0 {
                 reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             } else {
                 reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             },
             s: if c.z == MAX_CHUNK_IN_REGION as u8 {
                 reg.nlights.s.get(&Pair { x: c.x, z: 0 })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             } else {
                 reg.lights.get(&Pair { x: c.x, z: c.z + 1 })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             },
             w: if c.x == 0 {
                 reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             } else {
                 reg.lights.get(&Pair { x: c.x - 1, z: c.z })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             },
             e: if c.x == MAX_CHUNK_IN_REGION as u8 {
                 reg.nlights.e.get(&Pair { x: 0, z: c.z })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             } else {
                 reg.lights.get(&Pair { x: c.x + 1, z: c.z })
-                    .unwrap_or(&[0u8; BLOCKS_IN_CHUNK_3D])
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
             },
         },
         biomes: &reg.biomes[c],

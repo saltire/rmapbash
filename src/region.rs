@@ -170,6 +170,7 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
 
                 // Default to 0x0f: blocklight (top 4 bits) at 0, skylight (bottom 4 bits) at max.
                 let mut lights = [0x0fu8; BLOCKS_IN_CHUNK_3D];
+                let mut sections = Vec::new();
 
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
@@ -180,6 +181,7 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                         !section.contains_key("BlockLight") && !section.contains_key("SkyLight") {
                         continue;
                     }
+                    sections.push(*y);
 
                     let so = *y as usize * BLOCKS_IN_SECTION_3D;
 
@@ -193,6 +195,22 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                         lights[so + i * 2] = ((bbytes[i] & 0x0f) << 4) | (sbytes[i] & 0x0f);
                         // The top half of each byte, moving skylight to the bottom.
                         lights[so + i * 2 + 1] = (bbytes[i] & 0xf0) | (sbytes[i] >> 4);
+                    }
+                }
+
+                // Attempt to fill in missing sections by copying from above. Not perfect.
+                let mut abovelights = [0x0fu8; BLOCKS_IN_CHUNK_2D];
+                for y in (0..SECTIONS_IN_CHUNK_Y).rev() {
+                    if !sections.contains(&(y as u8)) {
+                        // If the section doesn't exist, copy from the bottom of the section above.
+                        for sy in 0..BLOCKS_IN_SECTION_Y {
+                            let syo = y * BLOCKS_IN_SECTION_3D + sy * BLOCKS_IN_CHUNK_2D;
+                            lights[syo..syo + BLOCKS_IN_CHUNK_2D].copy_from_slice(&abovelights);
+                        }
+                    } else {
+                        // If the section exists, save the bottom layer of light values.
+                        let so = y * BLOCKS_IN_SECTION_3D;
+                        abovelights.copy_from_slice(&lights[so..so + BLOCKS_IN_CHUNK_2D]);
                     }
                 }
 
