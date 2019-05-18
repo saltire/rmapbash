@@ -32,10 +32,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                     continue;
                 }
 
-                let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
-                    MAX_LIGHT_LEVEL
-                } else {
-                    chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D]
+                let tlight = match by {
+                    MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
+                    _ => chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D],
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;

@@ -30,64 +30,56 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
     Chunk {
         blocks: &reg.blocks[c],
         nblocks: Edges {
-            n: if c.z == 0 {
-                reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            n: match c.z {
+                0 => reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            s: if c.z == MAX_CHUNK_IN_REGION as u8 {
-                reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            s: match c.z as usize {
+                MAX_CHUNK_IN_REGION => reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            w: if c.x == 0 {
-                reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            w: match c.x {
+                0 => reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            e: if c.x == MAX_CHUNK_IN_REGION as u8 {
-                reg.nblocks.e.get(&Pair { x: 0, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D])
+            e: match c.x as usize {
+                MAX_CHUNK_IN_REGION => reg.nblocks.e.get(&Pair { x: 0, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
         },
         lights: &reg.lights[c],
         nlights: Edges {
-            n: if c.z == 0 {
-                reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
+            n: match c.z {
+                0 => reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
-            s: if c.z == MAX_CHUNK_IN_REGION as u8 {
-                reg.nlights.s.get(&Pair { x: c.x, z: 0 })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.lights.get(&Pair { x: c.x, z: c.z + 1 })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
+            s: match c.z as usize {
+                MAX_CHUNK_IN_REGION => reg.nlights.s.get(&Pair { x: c.x, z: 0 })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.lights.get(&Pair { x: c.x, z: c.z + 1 })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
-            w: if c.x == 0 {
-                reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.lights.get(&Pair { x: c.x - 1, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
+            w: match c.x {
+                0 => reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.lights.get(&Pair { x: c.x - 1, z: c.z })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
-            e: if c.x == MAX_CHUNK_IN_REGION as u8 {
-                reg.nlights.e.get(&Pair { x: 0, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
-            } else {
-                reg.lights.get(&Pair { x: c.x + 1, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D])
+            e: match c.x as usize {
+                MAX_CHUNK_IN_REGION => reg.nlights.e.get(&Pair { x: 0, z: c.z })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.lights.get(&Pair { x: c.x + 1, z: c.z })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
         },
         biomes: &reg.biomes[c],
@@ -114,10 +106,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                     continue;
                 }
 
-                let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
-                    MAX_LIGHT_LEVEL
-                } else {
-                    chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D]
+                let tlight = match by {
+                    MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
+                    _ => chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D]
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
@@ -127,15 +118,13 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 // TODO: once we implement shapes, add hilight/shadow when the adjacent block
                 // has skylight and isn't a solid shape (i.e., has gaps).
 
-                let lblock = if bz == MAX_BLOCK_IN_CHUNK {
-                    chunk.nblocks.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
-                } else {
-                    chunk.blocks[bo3 + BLOCKS_IN_CHUNK]
+                let lblock = match bz {
+                    MAX_BLOCK_IN_CHUNK => chunk.nblocks.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+                    _ => chunk.blocks[bo3 + BLOCKS_IN_CHUNK],
                 } as usize;
-                let llight = if bz == MAX_BLOCK_IN_CHUNK {
-                    chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK]
-                } else {
-                    chunk.lights[bo3 + BLOCKS_IN_CHUNK]
+                let llight = match bz {
+                    MAX_BLOCK_IN_CHUNK => chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+                    _ => chunk.lights[bo3 + BLOCKS_IN_CHUNK],
                 };
                 let lslight = (llight & 0x0f) as usize;
                 let lblight = ((llight & 0xf0) >> 4) as usize;
@@ -144,15 +133,13 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let lcolor = &blocktype.colors[biome][lslight][lblight][lshade];
                 let lcolor2 = &blocktype.colors[biome][lslight][lblight][lshade + 3];
 
-                let rblock = if bx == MAX_BLOCK_IN_CHUNK {
-                    chunk.nblocks.e[bo3 - MAX_BLOCK_IN_CHUNK]
-                } else {
-                    chunk.blocks[bo3 + 1]
+                let rblock = match bx {
+                    MAX_BLOCK_IN_CHUNK => chunk.nblocks.e[bo3 - MAX_BLOCK_IN_CHUNK],
+                    _ => chunk.blocks[bo3 + 1],
                 } as usize;
-                let rlight = if bx == MAX_BLOCK_IN_CHUNK {
-                    chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK]
-                } else {
-                    chunk.lights[bo3 + 1]
+                let rlight = match bx {
+                    MAX_BLOCK_IN_CHUNK => chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK],
+                    _ => chunk.lights[bo3 + 1],
                 };
                 let rslight = (rlight & 0x0f) as usize;
                 let rblight = ((rlight & 0xf0) >> 4) as usize;
