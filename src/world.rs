@@ -78,19 +78,19 @@ pub fn get_world(worldpath: &Path) -> Result<World, Error> {
             }
 
             if r.z == rlimits.n {
-                let min_cz = chunks.iter().map(|c| c.z).min().unwrap() as usize;
+                let min_cz = chunks.iter().map(|c| c.z).min().unwrap();
                 margins.n = std::cmp::min(margins.n, min_cz);
             }
             if r.x == rlimits.e {
-                let max_cx = chunks.iter().map(|c| c.x).max().unwrap() as usize;
+                let max_cx = chunks.iter().map(|c| c.x).max().unwrap();
                 margins.e = std::cmp::min(margins.e, CHUNKS_IN_REGION - max_cx - 1);
             }
             if r.z == rlimits.s {
-                let max_cz = chunks.iter().map(|c| c.z).max().unwrap() as usize;
+                let max_cz = chunks.iter().map(|c| c.z).max().unwrap();
                 margins.s = std::cmp::min(margins.s, CHUNKS_IN_REGION - max_cz - 1);
             }
             if r.x == rlimits.w {
-                let min_cx = chunks.iter().map(|c| c.x).min().unwrap() as usize;
+                let min_cx = chunks.iter().map(|c| c.x).min().unwrap();
                 margins.w = std::cmp::min(margins.w, min_cx);
             }
         }

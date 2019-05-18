@@ -26,29 +26,29 @@ fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
     }
 }
 
-fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
+fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> {
     Chunk {
         blocks: &reg.blocks[c],
         nblocks: Edges {
             n: match c.z {
-                0 => reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
+                0 => reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            s: match c.z as usize {
+            s: match c.z {
                 MAX_CHUNK_IN_REGION => reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
             w: match c.x {
-                0 => reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
+                0 => reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION, z: c.z })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            e: match c.x as usize {
+            e: match c.x {
                 MAX_CHUNK_IN_REGION => reg.nblocks.e.get(&Pair { x: 0, z: c.z })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
@@ -58,24 +58,24 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<u8>) -> Chunk<'a> {
         lights: &reg.lights[c],
         nlights: Edges {
             n: match c.z {
-                0 => reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION as u8 })
+                0 => reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
-            s: match c.z as usize {
+            s: match c.z {
                 MAX_CHUNK_IN_REGION => reg.nlights.s.get(&Pair { x: c.x, z: 0 })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x, z: c.z + 1 })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
             w: match c.x {
-                0 => reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION as u8, z: c.z })
+                0 => reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x - 1, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
-            e: match c.x as usize {
+            e: match c.x {
                 MAX_CHUNK_IN_REGION => reg.nlights.e.get(&Pair { x: 0, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x + 1, z: c.z })
@@ -100,8 +100,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                let block = chunk.blocks[bo3] as usize;
-                let blocktype = &blocktypes[block];
+                let block = chunk.blocks[bo3];
+                let blocktype = &blocktypes[block as usize];
                 if blocktype.empty {
                     continue;
                 }
@@ -121,7 +121,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let lblock = match bz {
                     MAX_BLOCK_IN_CHUNK => chunk.nblocks.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
                     _ => chunk.blocks[bo3 + BLOCKS_IN_CHUNK],
-                } as usize;
+                };
                 let llight = match bz {
                     MAX_BLOCK_IN_CHUNK => chunk.nlights.s[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
                     _ => chunk.lights[bo3 + BLOCKS_IN_CHUNK],
@@ -136,7 +136,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let rblock = match bx {
                     MAX_BLOCK_IN_CHUNK => chunk.nblocks.e[bo3 - MAX_BLOCK_IN_CHUNK],
                     _ => chunk.blocks[bo3 + 1],
-                } as usize;
+                };
                 let rlight = match bx {
                     MAX_BLOCK_IN_CHUNK => chunk.nlights.e[bo3 - MAX_BLOCK_IN_CHUNK],
                     _ => chunk.lights[bo3 + 1],
@@ -215,16 +215,16 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
             let arx = (r.x - world.rlimits.w) as usize;
             let arz = (r.z - world.rlimits.n) as usize;
 
-            for cz in (0..CHUNKS_IN_REGION as u8).rev() {
-                for cx in (0..CHUNKS_IN_REGION as u8).rev() {
+            for cz in (0..CHUNKS_IN_REGION).rev() {
+                for cx in (0..CHUNKS_IN_REGION).rev() {
                     let c = &Pair { x: cx, z: cz };
                     if !reg.blocks.contains_key(c) {
                         continue;
                     }
 
                     // println!("Drawing chunk {}, {}", c.x, c.z);
-                    let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
-                    let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
+                    let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
+                    let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
 
                     let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
                     let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;
@@ -261,23 +261,23 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, nigh
         w: reg.blocks.keys().map(|c| c.x).min().unwrap(),
     };
     let csize = Pair {
-        x: (climits.e - climits.w + 1) as usize,
-        z: (climits.s - climits.n + 1) as usize,
+        x: climits.e - climits.w + 1,
+        z: climits.s - climits.n + 1,
     };
     let size = get_iso_size(&csize);
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for cz in (0..CHUNKS_IN_REGION as u8).rev() {
-        for cx in (0..CHUNKS_IN_REGION as u8).rev() {
+    for cz in (0..CHUNKS_IN_REGION).rev() {
+        for cx in (0..CHUNKS_IN_REGION).rev() {
             let c = &Pair { x: cx, z: cz };
             if !reg.blocks.contains_key(c) {
                 continue;
             }
 
             // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = (c.x - climits.w) as usize;
-            let acz = (c.z - climits.n) as usize;
+            let acx = c.x - climits.w;
+            let acz = c.z - climits.n;
 
             let cpx = (acx + csize.z - acz - 1) * ISO_CHUNK_X_MARGIN;
             let cpy = (acx + acz) * ISO_CHUNK_Y_MARGIN;

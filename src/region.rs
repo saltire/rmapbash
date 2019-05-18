@@ -17,11 +17,11 @@ use super::sizes::*;
 use super::types::*;
 
 pub struct Region {
-    pub blocks: HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>,
-    pub nblocks: Edges<HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>>,
-    pub lights: HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>,
-    pub nlights: Edges<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>>,
-    pub biomes: HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>,
+    pub blocks: HashMap<Pair<usize>, [u16; BLOCKS_IN_CHUNK_3D]>,
+    pub nblocks: Edges<HashMap<Pair<usize>, [u16; BLOCKS_IN_CHUNK_3D]>>,
+    pub lights: HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_3D]>,
+    pub nlights: Edges<HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_3D]>>,
+    pub biomes: HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_2D]>,
 }
 
 pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
@@ -50,12 +50,12 @@ pub fn read_region_chunks(path: &Path) -> Result<[bool; CHUNKS_IN_REGION_2D], Er
     Ok(chunks)
 }
 
-pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<Pair<u8>>, Error> {
+pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<Pair<usize>>, Error> {
     let mut file = File::open(path)?;
     let mut chunks = vec![];
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in 0..CHUNKS_IN_REGION {
+        for cx in 0..CHUNKS_IN_REGION {
             if file.read_u32::<BigEndian>()? > 0 {
                 chunks.push(Pair { x: cx, z: cz });
             }
@@ -65,10 +65,10 @@ pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<Pair<u8>>, Error> {
     Ok(chunks)
 }
 
-fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
+fn get_region_chunk_reader(file: &mut File, cx: usize, cz: usize)
 -> Result<Option<ZlibDecoder<&mut File>>, Error> {
-    let co = (cz as u64 * CHUNKS_IN_REGION as u64 + cx as u64) * 4;
-    file.seek(SeekFrom::Start(co))?;
+    let co = (cz * CHUNKS_IN_REGION + cx) * 4;
+    file.seek(SeekFrom::Start(co as u64))?;
 
     let offset = (file.read_u32::<BigEndian>()? >> 8) as usize * SECTOR_SIZE;
     Ok(if offset > 0 {
@@ -84,16 +84,16 @@ fn get_region_chunk_reader(file: &mut File, cx: u8, cz: u8)
     })
 }
 
-pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[&str])
--> Result<HashMap<Pair<u8>, [u16; BLOCKS_IN_CHUNK_3D]>, Error> {
+pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<usize>, blocknames: &[&str])
+-> Result<HashMap<Pair<usize>, [u16; BLOCKS_IN_CHUNK_3D]>, Error> {
     let mut blockmaps = HashMap::new();
     if !path.exists() {
         return Ok(blockmaps);
     }
     let mut file = File::open(path)?;
 
-    for cz in margins.n..(CHUNKS_IN_REGION as u8 - margins.s) {
-        for cx in margins.w..(CHUNKS_IN_REGION as u8 - margins.e) {
+    for cz in margins.n..(CHUNKS_IN_REGION - margins.s) {
+        for cx in margins.w..(CHUNKS_IN_REGION - margins.e) {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 // println!("Reading chunk {}, {}", cx, cz);
 
@@ -110,7 +110,7 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
                         continue;
                     }
 
-                    let y = section["Y"].to_u8()?;
+                    let y = *section["Y"].to_u8()? as usize;
                     let palette = section["Palette"].to_list()?;
                     let states = section["BlockStates"].to_long_array()?;
 
@@ -132,7 +132,7 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
                         }
                     }
 
-                    let so = *y as usize * BLOCKS_IN_SECTION_3D;
+                    let so = y * BLOCKS_IN_SECTION_3D;
                     let bits = (len / 64) as u8;
 
                     let mut br = BitReader::new(&bytes);
@@ -149,8 +149,8 @@ pub fn read_region_chunk_blocks(path: &Path, margins: &Edges<u8>, blocknames: &[
     Ok(blockmaps)
 }
 
-pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
--> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_3D]>, Error> {
+pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<usize>)
+-> Result<HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_3D]>, Error> {
     let mut lightmaps = HashMap::new();
     if !path.exists() {
         return Ok(lightmaps)
@@ -159,8 +159,8 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
 
     let bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
 
-    for cz in margins.n..(CHUNKS_IN_REGION as u8 - margins.s) {
-        for cx in margins.w..(CHUNKS_IN_REGION as u8 - margins.e) {
+    for cz in margins.n..(CHUNKS_IN_REGION - margins.s) {
+        for cx in margins.w..(CHUNKS_IN_REGION - margins.e) {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 // println!("Reading chunk {}, {}", cx, cz);
 
@@ -175,15 +175,15 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                 for _ in 0..slen {
                     let section = nbt::read_compound_tag_names(&mut reader,
                         vec!["Y", "BlockLight", "SkyLight"])?;
-                    let y = section["Y"].to_u8()?;
+                    let y = *section["Y"].to_u8()? as usize;
 
-                    if *y > MAX_SECTION_IN_CHUNK_Y as u8 ||
+                    if y > MAX_SECTION_IN_CHUNK_Y ||
                         !section.contains_key("BlockLight") && !section.contains_key("SkyLight") {
                         continue;
                     }
-                    sections.push(*y);
+                    sections.push(y);
 
-                    let so = *y as usize * BLOCKS_IN_SECTION_3D;
+                    let so = y * BLOCKS_IN_SECTION_3D;
 
                     let bbytes = section.get("BlockLight")
                         .map_or(&bytes_default, |tag| tag.to_u8_array().unwrap());
@@ -201,7 +201,7 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
                 // Attempt to fill in missing sections by copying from above. Not perfect.
                 let mut abovelights = [0x0fu8; BLOCKS_IN_CHUNK_2D];
                 for y in (0..SECTIONS_IN_CHUNK_Y).rev() {
-                    if !sections.contains(&(y as u8)) {
+                    if !sections.contains(&y) {
                         // If the section doesn't exist, copy from the bottom of the section above.
                         for sy in 0..BLOCKS_IN_SECTION_Y {
                             let syo = y * BLOCKS_IN_SECTION_3D + sy * BLOCKS_IN_CHUNK_2D;
@@ -223,15 +223,15 @@ pub fn read_region_chunk_lightmaps(path: &Path, margins: &Edges<u8>)
 }
 
 pub fn read_region_chunk_biomes(path: &Path)
--> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
+-> Result<HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
     let mut biomes = HashMap::new();
     if !path.exists() {
         return Ok(biomes)
     }
     let mut file = File::open(path)?;
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in 0..CHUNKS_IN_REGION {
+        for cx in 0..CHUNKS_IN_REGION {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_none() { continue; }
                 if nbt::seek_compound_tag_name(&mut reader, "Biomes")?.is_none() { continue; }
@@ -250,15 +250,15 @@ pub fn read_region_chunk_biomes(path: &Path)
 }
 
 pub fn read_region_chunk_heightmaps(path: &Path)
--> Result<HashMap<Pair<u8>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
+-> Result<HashMap<Pair<usize>, [u8; BLOCKS_IN_CHUNK_2D]>, Error> {
     let mut heightmaps = HashMap::new();
     if !path.exists() {
         return Ok(heightmaps)
     }
     let mut file = File::open(path)?;
 
-    for cz in 0..CHUNKS_IN_REGION as u8 {
-        for cx in 0..CHUNKS_IN_REGION as u8 {
+    for cz in 0..CHUNKS_IN_REGION {
+        for cx in 0..CHUNKS_IN_REGION {
             if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                 let root = nbt::read_compound_tag_names(&mut reader, vec!["Level"])?;
                 let level = root["Level"].to_hashmap()?;
@@ -298,10 +298,10 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &Vec<&str>)
         e: get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
     };
     let nmargins = Edges {
-        n: Edges { n: MAX_CHUNK_IN_REGION as u8, s: 0, w: 0, e: 0 },
-        s: Edges { n: 0, s: MAX_CHUNK_IN_REGION as u8, w: 0, e: 0 },
-        w: Edges { n: 0, s: 0, w: MAX_CHUNK_IN_REGION as u8, e: 0 },
-        e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION as u8 },
+        n: Edges { n: MAX_CHUNK_IN_REGION, s: 0, w: 0, e: 0 },
+        s: Edges { n: 0, s: MAX_CHUNK_IN_REGION, w: 0, e: 0 },
+        w: Edges { n: 0, s: 0, w: MAX_CHUNK_IN_REGION, e: 0 },
+        e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION },
     };
 
     Ok(Region {

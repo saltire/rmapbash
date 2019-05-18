@@ -25,6 +25,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
             let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
+            let biome = chunk.biomes[bo2] as usize;
+
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 let blocktype = &blocktypes[chunk.blocks[bo3] as usize];
@@ -38,7 +40,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let blockcolor = &blocktype.colors[chunk.biomes[bo2] as usize][tslight][tblight][1];
+                let blockcolor = &blocktype.colors[biome][tslight][tblight][1];
 
                 color = color::blend_alpha_color(&color, blockcolor);
                 if color.a == MAX_CHANNEL_VALUE {
@@ -85,8 +87,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 
         for (c, cblocks) in rblocks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = arx * CHUNKS_IN_REGION + c.x as usize - world.margins.w;
-            let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
+            let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
+            let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
             let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
             let chunk = Chunk {
@@ -136,16 +138,16 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, ni
         w: rblocks.keys().map(|c| c.x).min().unwrap(),
     };
     let size = Pair {
-        x: (climits.e - climits.w + 1) as usize * BLOCKS_IN_CHUNK,
-        z: (climits.s - climits.n + 1) as usize * BLOCKS_IN_CHUNK,
+        x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
+        z: (climits.s - climits.n + 1) * BLOCKS_IN_CHUNK,
     };
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     for (c, cblocks) in rblocks.iter() {
         // println!("Drawing chunk {}, {}", c.x, c.z);
-        let acx = (c.x - climits.w) as usize;
-        let acz = (c.z - climits.n) as usize;
+        let acx = c.x - climits.w;
+        let acz = c.z - climits.n;
         let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
         let chunk = Chunk {
