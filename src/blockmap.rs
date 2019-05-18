@@ -10,8 +10,16 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
+struct Chunk<'a> {
+    blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
+    // nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
+    lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
+    // nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
+    biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
+}
+
 fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    cblocks: &[u16], clights: &[u8], cbiomes: &[u8], co: &usize, width: &usize) {
+    chunk: &Chunk, co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -19,7 +27,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                let blocktype = &blocktypes[cblocks[bo3] as usize];
+                let blocktype = &blocktypes[chunk.blocks[bo3] as usize];
                 if blocktype.empty {
                     continue;
                 }
@@ -27,11 +35,11 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
                 let tlight = if by == MAX_BLOCK_IN_CHUNK_Y {
                     MAX_LIGHT_LEVEL
                 } else {
-                    clights[bo3 + BLOCKS_IN_CHUNK_2D]
+                    chunk.lights[bo3 + BLOCKS_IN_CHUNK_2D]
                 };
                 let tslight = (tlight & 0x0f) as usize;
                 let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let blockcolor = &blocktype.colors[cbiomes[bo2] as usize][tslight][tblight][1];
+                let blockcolor = &blocktype.colors[chunk.biomes[bo2] as usize][tslight][tblight][1];
 
                 color = color::blend_alpha_color(&color, blockcolor);
                 if color.a == MAX_CHANNEL_VALUE {
@@ -82,7 +90,13 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
             let acz = arz * CHUNKS_IN_REGION + c.z as usize - world.margins.n;
             let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
-            draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
+            let chunk = Chunk {
+                blocks: &cblocks,
+                lights: &rlights[c],
+                biomes: &rbiomes[c],
+            };
+
+            draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
         }
     }
 
@@ -135,7 +149,13 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, ni
         let acz = (c.z - climits.n) as usize;
         let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
-        draw_chunk(&mut pixels, &blocktypes, cblocks, &rlights[c], &rbiomes[c], &co, &size.x);
+        let chunk = Chunk {
+            blocks: &cblocks,
+            lights: &rlights[c],
+            biomes: &rbiomes[c],
+        };
+
+        draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
     }
 
     let file = File::create(outpath)?;
