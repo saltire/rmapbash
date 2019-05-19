@@ -73,17 +73,14 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 
     for r in world.regions.iter() {
         i += 1;
-        println!("Reading blocks for region {}, {} ({}/{})", r.x, r.z, i, len);
-        let regionpath = region::get_path_from_coords(worldpath, &r);
-        let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
-        let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
-        let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
+        println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
+        let reg = region::read_region_data(worldpath, &r, &blocknames)?;
 
         println!("Drawing block map for region {}, {}", r.x, r.z);
         let arx = (r.x - world.rlimits.w) as usize;
         let arz = (r.z - world.rlimits.n) as usize;
 
-        for (c, cblocks) in rblocks.iter() {
+        for (c, cblocks) in reg.blocks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
             let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
             let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
@@ -91,8 +88,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 
             let chunk = Chunk {
                 blocks: &cblocks,
-                lights: &rlights[c],
-                biomes: &rbiomes[c],
+                lights: &reg.lights[c],
+                biomes: &reg.biomes[c],
             };
 
             draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
@@ -108,29 +105,20 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 #[allow(dead_code)]
 pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
-    println!("Creating block map for region {}, {}", r.x, r.z);
-    let regionpath = region::get_path_from_coords(worldpath, &r);
-
-    println!("Reading blocks");
+    println!("Reading block data for region {}, {}", r.x, r.z);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
-    if rblocks.keys().len() == 0 {
+    let reg = region::read_region_data(worldpath, &r, &blocknames)?;
+    if reg.blocks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
-    println!("Reading light maps");
-    let rlights = region::read_region_chunk_lightmaps(regionpath.as_path(), &Edges::default())?;
-
-    println!("Reading biomes");
-    let rbiomes = region::read_region_chunk_biomes(regionpath.as_path())?;
-
     println!("Drawing block map");
     let climits = Edges {
-        n: rblocks.keys().map(|c| c.z).min().unwrap(),
-        e: rblocks.keys().map(|c| c.x).max().unwrap(),
-        s: rblocks.keys().map(|c| c.z).max().unwrap(),
-        w: rblocks.keys().map(|c| c.x).min().unwrap(),
+        n: reg.blocks.keys().map(|c| c.z).min().unwrap(),
+        e: reg.blocks.keys().map(|c| c.x).max().unwrap(),
+        s: reg.blocks.keys().map(|c| c.z).max().unwrap(),
+        w: reg.blocks.keys().map(|c| c.x).min().unwrap(),
     };
     let size = Pair {
         x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
@@ -139,7 +127,7 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for (c, cblocks) in rblocks.iter() {
+    for (c, cblocks) in reg.blocks.iter() {
         // println!("Drawing chunk {}, {}", c.x, c.z);
         let acx = c.x - climits.w;
         let acz = c.z - climits.n;
@@ -147,8 +135,8 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 
         let chunk = Chunk {
             blocks: &cblocks,
-            lights: &rlights[c],
-            biomes: &rbiomes[c],
+            lights: &reg.lights[c],
+            biomes: &reg.biomes[c],
         };
 
         draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);

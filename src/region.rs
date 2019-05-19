@@ -33,7 +33,7 @@ pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
         })
 }
 
-pub fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<i32>) -> PathBuf {
+fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<i32>) -> PathBuf {
     worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z))
 }
 
