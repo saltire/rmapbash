@@ -76,19 +76,21 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     for r in world.regions.iter() {
         i += 1;
         println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-        let reg = region2::read_region_chunk_data(worldpath, &r, &blocknames)?;
+        if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+            println!("Drawing block map for region {}, {}", r.x, r.z);
+            let arx = (r.x - world.rlimits.w) as usize;
+            let arz = (r.z - world.rlimits.n) as usize;
 
-        println!("Drawing block map for region {}, {}", r.x, r.z);
-        let arx = (r.x - world.rlimits.w) as usize;
-        let arz = (r.z - world.rlimits.n) as usize;
+            for (c, chunk) in reg.chunks.iter() {
+                // println!("Drawing chunk {}, {}", c.x, c.z);
+                let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
+                let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
+                let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
 
-        for (c, chunk) in reg.chunks.iter() {
-            // println!("Drawing chunk {}, {}", c.x, c.z);
-            let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
-            let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
-            let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
-
-            draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
+                draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
+            }
+        } else {
+            println!("No data in region.");
         }
     }
 
@@ -103,37 +105,39 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    let reg = region2::read_region_chunk_data(worldpath, &r, &blocknames)?;
-    if reg.chunks.keys().len() == 0 {
-        println!("No chunks in region.");
-        return Ok(());
+    if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+        if reg.chunks.keys().len() > 0 {
+            println!("Drawing block map");
+
+            let climits = Edges {
+                n: reg.chunks.keys().map(|c| c.z).min().unwrap(),
+                e: reg.chunks.keys().map(|c| c.x).max().unwrap(),
+                s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
+                w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
+            };
+            let size = Pair {
+                x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
+                z: (climits.s - climits.n + 1) * BLOCKS_IN_CHUNK,
+            };
+
+            let mut pixels = vec![0u8; size.x * size.z * 4];
+
+            for (c, chunk) in reg.chunks.iter() {
+                // println!("Drawing chunk {}, {}", c.x, c.z);
+                let acx = c.x - climits.w;
+                let acz = c.z - climits.n;
+                let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
+
+                draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
+            }
+
+            let file = File::create(outpath)?;
+            image::draw_block_map(&pixels, size, file, true)?;
+
+            return Ok(());
+        }
     }
 
-    println!("Drawing block map");
-    let climits = Edges {
-        n: reg.chunks.keys().map(|c| c.z).min().unwrap(),
-        e: reg.chunks.keys().map(|c| c.x).max().unwrap(),
-        s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
-        w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
-    };
-    let size = Pair {
-        x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
-        z: (climits.s - climits.n + 1) * BLOCKS_IN_CHUNK,
-    };
-
-    let mut pixels = vec![0u8; size.x * size.z * 4];
-
-    for (c, chunk) in reg.chunks.iter() {
-        // println!("Drawing chunk {}, {}", c.x, c.z);
-        let acx = c.x - climits.w;
-        let acz = c.z - climits.n;
-        let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
-
-        draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
-    }
-
-    let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, size, file, true)?;
-
+    println!("No data in region.");
     Ok(())
 }

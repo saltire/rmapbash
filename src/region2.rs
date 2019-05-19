@@ -45,6 +45,7 @@ pub struct RegionChunk {
 
 pub struct Region {
     pub chunks: HashMap<Pair<usize>, RegionChunk>,
+    // pub nchunks: Edges<HashMap<Pair<usize>, RegionChunk>>,
 }
 
 pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
@@ -57,7 +58,7 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
 
     let mut chunk = RegionChunk {
         blocks: [0u16; BLOCKS_IN_CHUNK_3D],
-        lights: [0x0fu8; BLOCKS_IN_CHUNK_3D],
+        lights: [0u8; BLOCKS_IN_CHUNK_3D],
         biomes: [0u8; BLOCKS_IN_CHUNK_2D],
     };
 
@@ -133,30 +134,34 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
     Ok(Some(chunk))
 }
 
-#[allow(dead_code)]
-pub fn read_region_chunk_data(worldpath: &Path, r: &Pair<i32>, blocknames: &[&str])
--> Result<Region, Box<Error>> {
-    let regionpath = get_path_from_coords(worldpath, &r);
-
-    let mut region = Region {
-        chunks: HashMap::new(),
-    };
-    if !regionpath.exists() {
-        return Ok(region);
-    }
-    let mut file = File::open(regionpath)?;
-
-    let margins = Edges::default();
+fn read_region_chunk_data(file: &mut File, margins: &Edges<usize>, blocknames: &[&str])
+-> Result<HashMap<Pair<usize>, RegionChunk>, Box<Error>> {
+    let mut chunks = HashMap::new();
 
     for cz in margins.n..(CHUNKS_IN_REGION - margins.s) {
         for cx in margins.w..(CHUNKS_IN_REGION - margins.e) {
-            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+            if let Some(mut reader) = get_region_chunk_reader(file, cx, cz)? {
                 if let Some(chunk) = read_region_chunk(&mut reader, blocknames)? {
-                    region.chunks.insert(Pair { x: cx, z: cz }, chunk);
+                    chunks.insert(Pair { x: cx, z: cz }, chunk);
                 }
             }
         }
     }
 
-    Ok(region)
+    Ok(chunks)
+}
+
+#[allow(dead_code)]
+pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &[&str])
+-> Result<Option<Region>, Box<Error>> {
+    let regionpath = get_path_from_coords(worldpath, &r);
+    if !regionpath.exists() {
+        return Ok(None);
+    }
+
+    let mut file = File::open(regionpath)?;
+
+    Ok(Some(Region {
+        chunks: read_region_chunk_data(&mut file, &Edges::default(), blocknames)?,
+    }))
 }
