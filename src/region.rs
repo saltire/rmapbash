@@ -287,6 +287,7 @@ pub fn read_region_chunk_heightmaps(path: &Path)
     Ok(heightmaps)
 }
 
+#[allow(dead_code)]
 pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &Vec<&str>)
 -> Result<Region, Box<Error>> {
     let regionpath = get_path_from_coords(worldpath, &r);
