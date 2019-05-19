@@ -187,7 +187,28 @@ fn read_tag_payload<R>(reader: &mut R, id: &u8) -> Result<Tag, Error> where R: R
     })
 }
 
-pub fn seek_compound_tag_name<R>(reader: &mut R, tag_name: &str) -> Result<Option<()>, Error> where R: Read {
+pub fn seek_compound_tag_names<R>(reader: &mut R, names: Vec<&str>)
+-> Result<Option<String>, Error> where R: Read {
+    loop {
+        let (id, name) = read_tag_header(reader)?;
+        // println!("Found subtag: {} {}", id, name);
+
+        if id == 0 {
+            return Ok(None);
+        }
+        if id > 12 {
+            return Err(Error::new(ErrorKind::InvalidData, "Invalid tag id."));
+        }
+        if names.contains(&name.as_str()) {
+            return Ok(Some(name));
+        }
+
+        skip_tag_payload(reader, &id)?;
+    }
+}
+
+pub fn seek_compound_tag_name<R>(reader: &mut R, tag_name: &str)
+-> Result<Option<()>, Error> where R: Read {
     loop {
         let (id, name) = read_tag_header(reader)?;
         // println!("Found subtag: {} {}", id, name);

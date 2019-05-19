@@ -8,13 +8,11 @@ mod blockmap;
 mod blocktypes;
 mod color;
 mod data;
-mod heightmap;
 mod image;
 mod isomap;
 mod nbt;
 mod region;
 mod sizes;
-mod tinymap;
 mod types;
 mod world;
 
