@@ -6,18 +6,10 @@ use super::blocktypes::BlockType;
 use super::color;
 use super::color::RGBA;
 use super::image;
-use super::region2;
+use super::region;
 use super::sizes::*;
 use super::types::*;
 use super::world;
-
-// struct Chunk<'a> {
-//     blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
-//     nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
-//     lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
-//     nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
-//     biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
-// }
 
 fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
     Pair {
@@ -26,67 +18,7 @@ fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
     }
 }
 
-// fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> {
-//     Chunk {
-//         blocks: &reg.blocks[c],
-//         nblocks: Edges {
-//             n: match c.z {
-//                 0 => reg.nblocks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             e: match c.x {
-//                 MAX_CHUNK_IN_REGION => reg.nblocks.e.get(&Pair { x: 0, z: c.z })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             s: match c.z {
-//                 MAX_CHUNK_IN_REGION => reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.blocks.get(&Pair { x: c.x, z: c.z + 1 })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             w: match c.x {
-//                 0 => reg.nblocks.w.get(&Pair { x: MAX_CHUNK_IN_REGION, z: c.z })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
-//                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-//             },
-//         },
-//         lights: &reg.lights[c],
-//         nlights: Edges {
-//             n: match c.z {
-//                 0 => reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             e: match c.x {
-//                 MAX_CHUNK_IN_REGION => reg.nlights.e.get(&Pair { x: 0, z: c.z })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.lights.get(&Pair { x: c.x + 1, z: c.z })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             s: match c.z {
-//                 MAX_CHUNK_IN_REGION => reg.nlights.s.get(&Pair { x: c.x, z: 0 })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.lights.get(&Pair { x: c.x, z: c.z + 1 })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//             },
-//             w: match c.x {
-//                 0 => reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION, z: c.z })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//                 _ => reg.lights.get(&Pair { x: c.x - 1, z: c.z })
-//                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-//             },
-//         },
-//         biomes: &reg.biomes[c],
-//     }
-// }
-
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region2::Chunk,
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
     co: &usize, width: &usize) {
     for bz in (0..BLOCKS_IN_CHUNK).rev() {
         for bx in (0..BLOCKS_IN_CHUNK).rev() {
@@ -208,7 +140,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+            if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
                 println!("Drawing block map for region {}, {}", r.x, r.z);
                 let arx = (r.x - world.rlimits.w) as usize;
                 let arz = (r.z - world.rlimits.n) as usize;
@@ -246,7 +178,7 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bloc
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+    if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
         println!("Drawing block map");
         let climits = Edges {
             n: reg.chunks.keys().map(|c| c.z).min().unwrap(),

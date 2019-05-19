@@ -5,21 +5,12 @@ use std::path::Path;
 use super::blocktypes::BlockType;
 use super::color;
 use super::image;
-// use super::region;
-use super::region2;
+use super::region;
 use super::sizes::*;
 use super::types::*;
 use super::world;
 
-// struct Chunk<'a> {
-//     blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
-//     // nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
-//     lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
-//     // nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
-//     biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
-// }
-
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region2::Chunk,
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
     co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
@@ -76,7 +67,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     for r in world.regions.iter() {
         i += 1;
         println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-        if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+        if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
             println!("Drawing block map for region {}, {}", r.x, r.z);
             let arx = (r.x - world.rlimits.w) as usize;
             let arz = (r.z - world.rlimits.n) as usize;
@@ -105,7 +96,7 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    if let Some(reg) = region2::read_region_data(worldpath, &r, &blocknames)? {
+    if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
         if reg.chunks.keys().len() > 0 {
             println!("Drawing block map");
 
