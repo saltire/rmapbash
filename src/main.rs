@@ -30,10 +30,14 @@ fn main() {
         //     .long("region")
         //     .value_names(&["RX", "RZ"])
         //     .help("Region coordinates"))
+        .arg(Arg::with_name("i")
+            .short("i")
+            .long("isometric")
+            .help("Isometric view"))
         .arg(Arg::with_name("n")
             .short("n")
             .long("night")
-            .help("Night mode"))
+            .help("Night lighting"))
         .get_matches();
 
     if let Some(path_str) = matches.value_of("PATH") {
@@ -55,27 +59,36 @@ fn main() {
                 std::fs::create_dir_all(outdir).unwrap();
                 let outpath = outdir.join(format!("{}.png", mode));
 
+                let iso = matches.is_present("i");
+                print!("View:     ");
+                if iso { println!("Isometric") } else { println!("Orthographic") };
                 let night = matches.is_present("n");
-                if night {
-                    println!("Night mode is on");
-                }
+                print!("Lighting: ");
+                if night { println!("Night") } else { println!("Day") };
 
                 let start = Instant::now();
+
+                println!("Getting block types");
+                let blocktypes = blocktypes::get_block_types(&night);
 
                 let result = match mode {
                     "region" => {
                         let worldpath = inpath.parent().unwrap().parent().unwrap();
                         let r = region::get_coords_from_path(inpath.to_str().unwrap()).unwrap();
 
-                        isomap::draw_region_iso_map(&worldpath, &r, outpath.as_path(), night)
-                        // blockmap::draw_region_block_map(&worldpath, &r, outpath.as_path(), night)
-                        // heightmap::draw_region_heightmap(&worldpath, &r, outpath.as_path())
-                        // tinymap::draw_region_chunk_map(&worldpath, &r, outpath.as_path())
+                        if iso {
+                            isomap::draw_region_iso_map(
+                                &worldpath, &r, outpath.as_path(), &blocktypes)
+                        } else {
+                            blockmap::draw_region_block_map(
+                                &worldpath, &r, outpath.as_path(), &blocktypes)
+                        }
                     },
-                    _ => isomap::draw_world_iso_map(inpath, outpath.as_path(), night),
-                    // _ => blockmap::draw_world_block_map(inpath, outpath.as_path(), night),
-                    // _ => heightmap::draw_world_heightmap(inpath, outpath.as_path()),
-                    // _ => tinymap::draw_world_chunk_map(inpath, outpath.as_path()),
+                    _ => if iso {
+                        isomap::draw_world_iso_map(inpath, outpath.as_path(), &blocktypes)
+                    } else {
+                        blockmap::draw_world_block_map(inpath, outpath.as_path(), &blocktypes)
+                    },
                 };
 
                 let elapsed = start.elapsed();

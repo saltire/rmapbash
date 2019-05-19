@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use super::blocktypes;
+use super::blocktypes::BlockType;
 use super::color;
 use super::image;
 use super::region;
@@ -18,8 +18,7 @@ struct Chunk<'a> {
     biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    chunk: &Chunk, co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &Chunk, co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -58,7 +57,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 }
 
 #[allow(dead_code)]
-pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
+pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -67,7 +66,6 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
     let size = world.get_ortho_size();
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let mut i = 0;
@@ -108,16 +106,13 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, night: bool)
 }
 
 #[allow(dead_code)]
-pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, night: bool)
+pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
     println!("Creating block map for region {}, {}", r.x, r.z);
     let regionpath = region::get_path_from_coords(worldpath, &r);
 
-    println!("Getting block types");
-    let blocktypes = blocktypes::get_block_types(&night);
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-
     println!("Reading blocks");
+    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
     let rblocks = region::read_region_chunk_blocks(regionpath.as_path(), &Edges::default(), &blocknames)?;
     if rblocks.keys().len() == 0 {
         println!("No chunks in region.");

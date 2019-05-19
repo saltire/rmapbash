@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 
-use super::blocktypes;
+use super::blocktypes::BlockType;
 use super::color;
 use super::color::RGBA;
 use super::image;
@@ -86,8 +86,7 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> 
     }
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
-    chunk: &Chunk, co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &Chunk, co: &usize, width: &usize) {
     for bz in (0..BLOCKS_IN_CHUNK).rev() {
         for bx in (0..BLOCKS_IN_CHUNK).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -184,7 +183,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &Vec<blocktypes::BlockType>,
 }
 
 #[allow(dead_code)]
-pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
+pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -194,7 +193,6 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
     let size = get_iso_size(&csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    let blocktypes = blocktypes::get_block_types(&night);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
 
     let mut i = 0;
@@ -244,13 +242,10 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, night: bool)
 }
 
 #[allow(dead_code)]
-pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, night: bool)
+pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
-    println!("Getting block types");
-    let blocktypes = blocktypes::get_block_types(&night);
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-
     println!("Reading block data for region {}, {}", r.x, r.z);
+    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
     let reg = region::read_region_data(worldpath, &r, &blocknames)?;
 
     println!("Drawing block map");
