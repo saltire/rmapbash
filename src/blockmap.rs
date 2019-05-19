@@ -5,20 +5,22 @@ use std::path::Path;
 use super::blocktypes::BlockType;
 use super::color;
 use super::image;
-use super::region;
+// use super::region;
+use super::region2;
 use super::sizes::*;
 use super::types::*;
 use super::world;
 
-struct Chunk<'a> {
-    blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
-    // nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
-    lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
-    // nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
-    biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
-}
+// struct Chunk<'a> {
+//     blocks: &'a [u16; BLOCKS_IN_CHUNK_3D],
+//     // nblocks: Edges<&'a [u16; BLOCKS_IN_CHUNK_3D]>,
+//     lights: &'a [u8; BLOCKS_IN_CHUNK_3D],
+//     // nlights: Edges<&'a [u8; BLOCKS_IN_CHUNK_3D]>,
+//     biomes: &'a [u8; BLOCKS_IN_CHUNK_2D],
+// }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &Chunk, co: &usize, width: &usize) {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region2::RegionChunk,
+    co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -74,23 +76,17 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     for r in world.regions.iter() {
         i += 1;
         println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-        let reg = region::read_region_data(worldpath, &r, &blocknames)?;
+        let reg = region2::read_region_chunk_data(worldpath, &r, &blocknames)?;
 
         println!("Drawing block map for region {}, {}", r.x, r.z);
         let arx = (r.x - world.rlimits.w) as usize;
         let arz = (r.z - world.rlimits.n) as usize;
 
-        for (c, cblocks) in reg.blocks.iter() {
+        for (c, chunk) in reg.chunks.iter() {
             // println!("Drawing chunk {}, {}", c.x, c.z);
             let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
             let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
             let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
-
-            let chunk = Chunk {
-                blocks: &cblocks,
-                lights: &reg.lights[c],
-                biomes: &reg.biomes[c],
-            };
 
             draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
         }
@@ -107,18 +103,18 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    let reg = region::read_region_data(worldpath, &r, &blocknames)?;
-    if reg.blocks.keys().len() == 0 {
+    let reg = region2::read_region_chunk_data(worldpath, &r, &blocknames)?;
+    if reg.chunks.keys().len() == 0 {
         println!("No chunks in region.");
         return Ok(());
     }
 
     println!("Drawing block map");
     let climits = Edges {
-        n: reg.blocks.keys().map(|c| c.z).min().unwrap(),
-        e: reg.blocks.keys().map(|c| c.x).max().unwrap(),
-        s: reg.blocks.keys().map(|c| c.z).max().unwrap(),
-        w: reg.blocks.keys().map(|c| c.x).min().unwrap(),
+        n: reg.chunks.keys().map(|c| c.z).min().unwrap(),
+        e: reg.chunks.keys().map(|c| c.x).max().unwrap(),
+        s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
+        w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
     };
     let size = Pair {
         x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
@@ -127,17 +123,11 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
 
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    for (c, cblocks) in reg.blocks.iter() {
+    for (c, chunk) in reg.chunks.iter() {
         // println!("Drawing chunk {}, {}", c.x, c.z);
         let acx = c.x - climits.w;
         let acz = c.z - climits.n;
         let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
-
-        let chunk = Chunk {
-            blocks: &cblocks,
-            lights: &reg.lights[c],
-            biomes: &reg.biomes[c],
-        };
 
         draw_chunk(&mut pixels, &blocktypes, &chunk, &co, &size.x);
     }

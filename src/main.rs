@@ -13,6 +13,7 @@ mod image;
 mod isomap;
 mod nbt;
 mod region;
+mod region2;
 mod sizes;
 mod tinymap;
 mod types;
