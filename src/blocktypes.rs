@@ -46,7 +46,8 @@ impl PartialEq for BlockType {
     }
 }
 
-const BRIGHTNESS_ADJUST: f64 = 0.075;
+const BRIGHTNESS_ADJUST_DAY: f64 = 0.125;
+const BRIGHTNESS_ADJUST_NIGHT: f64 = 0.05;
 
 pub fn get_block_types(night: &bool) -> Vec<BlockType> {
     let mut blocktypes = Vec::new();
@@ -65,6 +66,7 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
             b: row.b.unwrap(),
         };
     }
+    let brightness_adjust = if *night { BRIGHTNESS_ADJUST_NIGHT } else { BRIGHTNESS_ADJUST_DAY };
 
     let blockpath = Path::new("./resources/blocks.csv");
     let mut blockreader = Reader::from_path(blockpath).unwrap();
@@ -100,17 +102,17 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
                     let lit_block_color = color::set_light_color(&biome_color, &light[sl][bl]);
                     blockcolors[biome_id][sl][bl][1] = lit_block_color;
                     blockcolors[biome_id][sl][bl][2] =
-                        color::adjust_brightness(&lit_block_color, &BRIGHTNESS_ADJUST);
+                        color::adjust_brightness(&lit_block_color, &brightness_adjust);
                     blockcolors[biome_id][sl][bl][3] =
-                        color::adjust_brightness(&lit_block_color, &-BRIGHTNESS_ADJUST);
+                        color::adjust_brightness(&lit_block_color, &-brightness_adjust);
 
                     if block_color2.a > 0 {
                         let lit_block_color2 = color::set_light_color(&block_color2, &light[sl][bl]);
                         blockcolors[biome_id][sl][bl][4] = lit_block_color2;
                         blockcolors[biome_id][sl][bl][5] =
-                            color::adjust_brightness(&lit_block_color2, &BRIGHTNESS_ADJUST);
+                            color::adjust_brightness(&lit_block_color2, &brightness_adjust);
                         blockcolors[biome_id][sl][bl][6] =
-                            color::adjust_brightness(&lit_block_color2, &-BRIGHTNESS_ADJUST);
+                            color::adjust_brightness(&lit_block_color2, &-brightness_adjust);
                     }
                 }
             }
