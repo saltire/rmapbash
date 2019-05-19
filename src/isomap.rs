@@ -36,6 +36,12 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> 
                 _ => reg.blocks.get(&Pair { x: c.x, z: c.z - 1 })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
+            e: match c.x {
+                MAX_CHUNK_IN_REGION => reg.nblocks.e.get(&Pair { x: 0, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
+                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
+            },
             s: match c.z {
                 MAX_CHUNK_IN_REGION => reg.nblocks.s.get(&Pair { x: c.x, z: 0 })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
@@ -48,12 +54,6 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> 
                 _ => reg.blocks.get(&Pair { x: c.x - 1, z: c.z })
                     .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
             },
-            e: match c.x {
-                MAX_CHUNK_IN_REGION => reg.nblocks.e.get(&Pair { x: 0, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-                _ => reg.blocks.get(&Pair { x: c.x + 1, z: c.z })
-                    .unwrap_or(&[0u16; BLOCKS_IN_CHUNK_3D]),
-            },
         },
         lights: &reg.lights[c],
         nlights: Edges {
@@ -61,6 +61,12 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> 
                 0 => reg.nlights.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x, z: c.z - 1 })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+            },
+            e: match c.x {
+                MAX_CHUNK_IN_REGION => reg.nlights.e.get(&Pair { x: 0, z: c.z })
+                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
+                _ => reg.lights.get(&Pair { x: c.x + 1, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
             s: match c.z {
@@ -73,12 +79,6 @@ fn get_chunk_data<'a>(reg: &'a region::Region, c: &'a Pair<usize>) -> Chunk<'a> 
                 0 => reg.nlights.w.get(&Pair { x: MAX_CHUNK_IN_REGION, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
                 _ => reg.lights.get(&Pair { x: c.x - 1, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-            },
-            e: match c.x {
-                MAX_CHUNK_IN_REGION => reg.nlights.e.get(&Pair { x: 0, z: c.z })
-                    .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
-                _ => reg.lights.get(&Pair { x: c.x + 1, z: c.z })
                     .unwrap_or(&[0x0fu8; BLOCKS_IN_CHUNK_3D]),
             },
         },
