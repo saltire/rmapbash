@@ -16,6 +16,12 @@ use super::nbt;
 use super::sizes::*;
 use super::types::*;
 
+pub struct Block {
+    pub btype: u16,
+    pub slight: usize,
+    pub blight: usize,
+}
+
 pub struct ChunkData {
     pub blocks: [u16; BLOCKS_IN_CHUNK_3D],
     pub lights: [u8; BLOCKS_IN_CHUNK_3D],
@@ -31,6 +37,93 @@ static EMPTY_CHUNK: ChunkData = ChunkData {
 pub struct Chunk<'a> {
     pub data: &'a ChunkData,
     pub ndata: Edges<&'a ChunkData>,
+}
+
+impl<'a> Chunk<'a> {
+    pub fn get_t_block(&self, by: &usize, bo3: &usize) -> Block {
+        let btype = match *by {
+            MAX_BLOCK_IN_CHUNK_Y => 0,
+            _ => self.data.blocks[bo3 + BLOCKS_IN_CHUNK_2D],
+        };
+        let light = match *by {
+            MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
+            _ => self.data.lights[bo3 + BLOCKS_IN_CHUNK_2D],
+        };
+
+        Block {
+            btype,
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
+
+    pub fn get_n_block(&self, bz: &usize, bo3: &usize) -> Block {
+        let btype = match *bz {
+            0 => self.ndata.n.blocks[bo3 + MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+            _ => self.data.blocks[bo3 - BLOCKS_IN_CHUNK],
+        };
+        let light = match *bz {
+            0 => self.ndata.n.lights[bo3 + MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+            _ => self.data.lights[bo3 - BLOCKS_IN_CHUNK],
+        };
+
+        Block {
+            btype,
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
+
+    pub fn get_e_block(&self, bx: &usize, bo3: &usize) -> Block {
+        let btype = match *bx {
+            MAX_BLOCK_IN_CHUNK => self.ndata.e.blocks[bo3 - MAX_BLOCK_IN_CHUNK],
+            _ => self.data.blocks[*bo3 + 1],
+        };
+        let light = match *bx {
+            MAX_BLOCK_IN_CHUNK => self.ndata.e.lights[bo3 - MAX_BLOCK_IN_CHUNK],
+            _ => self.data.lights[*bo3 + 1],
+        };
+
+        Block {
+            btype,
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
+
+    pub fn get_s_block(&self, bz: &usize, bo3: &usize) -> Block {
+        let btype = match *bz {
+            MAX_BLOCK_IN_CHUNK => self.ndata.s.blocks[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+            _ => self.data.blocks[bo3 + BLOCKS_IN_CHUNK],
+        };
+        let light = match *bz {
+            MAX_BLOCK_IN_CHUNK => self.ndata.s.lights[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
+            _ => self.data.lights[bo3 + BLOCKS_IN_CHUNK],
+        };
+
+        Block {
+            btype,
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
+
+    pub fn get_w_block(&self, bx: &usize, bo3: &usize) -> Block {
+        let btype = match *bx {
+            0 => self.ndata.w.blocks[bo3 + MAX_BLOCK_IN_CHUNK],
+            _ => self.data.blocks[*bo3 - 1],
+        };
+        let light = match *bx {
+            0 => self.ndata.w.lights[bo3 + MAX_BLOCK_IN_CHUNK],
+            _ => self.data.lights[*bo3 - 1],
+        };
+
+        Block {
+            btype,
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
 }
 
 pub struct Region {

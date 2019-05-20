@@ -32,64 +32,41 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                let block = chunk.data.blocks[bo3];
-                let blocktype = &blocktypes[block as usize];
+                let btype = chunk.data.blocks[bo3];
+                let blocktype = &blocktypes[btype as usize];
                 if blocktype.empty {
                     continue;
                 }
 
-                let tlight = match by {
-                    MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
-                    _ => chunk.data.lights[bo3 + BLOCKS_IN_CHUNK_2D]
-                };
-                let tslight = (tlight & 0x0f) as usize;
-                let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let tcolor = &blocktype.colors[biome][tslight][tblight][1];
-                let tcolor2 = &blocktype.colors[biome][tslight][tblight][4];
+                // Get the base color of the block.
+                let tblock = chunk.get_t_block(&by, &bo3);
+                let tcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][1];
+                let tcolor2 = &blocktype.colors[biome][tblock.slight][tblock.blight][4];
+                // Don't draw the top if the block above is the same as this one.
+                // This prevents stripes appearing in columns of translucent blocks.
+                let skip_top = tblock.btype == btype;
 
                 // TODO: once we implement shapes, add hilight/shadow when the adjacent block
                 // has skylight and isn't a solid shape (i.e., has gaps).
 
-                let lblock = match bz {
-                    MAX_BLOCK_IN_CHUNK => chunk.ndata.s.blocks[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
-                    _ => chunk.data.blocks[bo3 + BLOCKS_IN_CHUNK],
-                };
-                let llight = match bz {
-                    MAX_BLOCK_IN_CHUNK => chunk.ndata.s.lights[bo3 - MAX_BLOCK_IN_CHUNK * BLOCKS_IN_CHUNK],
-                    _ => chunk.data.lights[bo3 + BLOCKS_IN_CHUNK],
-                };
-                let lslight = (llight & 0x0f) as usize;
-                let lblight = ((llight & 0xf0) >> 4) as usize;
                 // Add a hilight if block to the left has skylight and is not the same as this one.
-                let lshade = if lslight > 0 && lblock != block { 2 } else { 1 };
-                let lcolor = &blocktype.colors[biome][lslight][lblight][lshade];
-                let lcolor2 = &blocktype.colors[biome][lslight][lblight][lshade + 3];
+                let lblock = chunk.get_s_block(&bz, &bo3);
+                let lshade = if lblock.slight > 0 && lblock.btype != btype { 2 } else { 1 };
+                let lcolor = &blocktype.colors[biome][lblock.slight][lblock.blight][lshade];
+                let lcolor2 = &blocktype.colors[biome][lblock.slight][lblock.blight][lshade + 3];
 
-                let rblock = match bx {
-                    MAX_BLOCK_IN_CHUNK => chunk.ndata.e.blocks[bo3 - MAX_BLOCK_IN_CHUNK],
-                    _ => chunk.data.blocks[bo3 + 1],
-                };
-                let rlight = match bx {
-                    MAX_BLOCK_IN_CHUNK => chunk.ndata.e.lights[bo3 - MAX_BLOCK_IN_CHUNK],
-                    _ => chunk.data.lights[bo3 + 1],
-                };
-                let rslight = (rlight & 0x0f) as usize;
-                let rblight = ((rlight & 0xf0) >> 4) as usize;
                 // Add a shadow if block to the right has skylight and is not the same as this one.
-                let rshade = if rslight > 0 && rblock != block { 3 } else { 1 };
-                let rcolor = &blocktype.colors[biome][rslight][rblight][rshade];
-                let rcolor2 = &blocktype.colors[biome][rslight][rblight][rshade + 3];
+                // let rblock = chunk.get_s_block(&bz, &bo3);
+                let rblock = chunk.get_e_block(&bx, &bo3);
+                let rshade = if rblock.slight > 0 && rblock.btype != btype { 3 } else { 1 };
+                let rcolor = &blocktype.colors[biome][rblock.slight][rblock.blight][rshade];
+                let rcolor2 = &blocktype.colors[biome][rblock.slight][rblock.blight][rshade + 3];
 
                 // Create an index of colors corresponding to the digits in the block shape.
                 let bcolors = [&RGBA::default(),
                     &tcolor, &lcolor, &rcolor, &tcolor2, &lcolor2, &rcolor2];
 
                 let bpy = bpy2 + (MAX_BLOCK_IN_CHUNK_Y - by) * ISO_BLOCK_SIDE_HEIGHT;
-
-                // Don't draw the top if the block above is the same as this one.
-                // This prevents stripes appearing in columns of translucent blocks.
-                let skip_top = by < MAX_BLOCK_IN_CHUNK_Y &&
-                    chunk.data.blocks[bo3] == chunk.data.blocks[bo3 + BLOCKS_IN_CHUNK_2D];
 
                 for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {

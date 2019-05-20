@@ -21,18 +21,31 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
             for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                let blocktype = &blocktypes[chunk.data.blocks[bo3] as usize];
+                let btype = chunk.data.blocks[bo3];
+                let blocktype = &blocktypes[btype as usize];
                 if blocktype.empty {
                     continue;
                 }
 
-                let tlight = match by {
-                    MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
-                    _ => chunk.data.lights[bo3 + BLOCKS_IN_CHUNK_2D],
+                let tblock = chunk.get_t_block(&by, &bo3);
+                let nblocks = Edges {
+                    n: chunk.get_n_block(&bz, &bo3),
+                    e: chunk.get_e_block(&bx, &bo3),
+                    s: chunk.get_s_block(&bz, &bo3),
+                    w: chunk.get_w_block(&bx, &bo3),
                 };
-                let tslight = (tlight & 0x0f) as usize;
-                let tblight = ((tlight & 0xf0) >> 4) as usize;
-                let blockcolor = &blocktype.colors[biome][tslight][tblight][1];
+                let is_edge = Edges {
+                    n: nblocks.n.slight > 0 && nblocks.n.btype != btype,
+                    s: nblocks.s.slight > 0 && nblocks.s.btype != btype,
+                    e: nblocks.e.slight > 0 && nblocks.e.btype != btype,
+                    w: nblocks.w.slight > 0 && nblocks.w.btype != btype,
+                };
+                let shade = match (is_edge.n || is_edge.w, is_edge.e || is_edge.s) {
+                    (true, false) => 2,
+                    (false, true) => 3,
+                    _ => 1,
+                };
+                let blockcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][shade];
 
                 color = color::blend_alpha_color(&color, blockcolor);
                 if color.a == MAX_CHANNEL_VALUE {
