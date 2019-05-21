@@ -214,15 +214,15 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
 
     let mut chunk = ChunkData {
         blocks: [0u16; BLOCKS_IN_CHUNK_3D],
-        lights: [0u8; BLOCKS_IN_CHUNK_3D],
+        lights: [0x0fu8; BLOCKS_IN_CHUNK_3D], // Default to full skylight and zero blocklight.
         biomes: [0u8; BLOCKS_IN_CHUNK_2D],
     };
+    // Default to zero skylight and blocklight for sections that exist but don't contain those tags.
+    let light_bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
 
     while let Some(tag_name) = nbt::seek_compound_tag_names(reader, vec!["Sections", "Biomes"])? {
         if tag_name == "Sections" {
             let slen = nbt::read_list_length(reader)?;
-
-            let light_bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
 
             for _ in 0..slen {
                 let section = nbt::read_compound_tag_names(reader,
@@ -264,18 +264,16 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
                 }
 
                 // Read lights.
-                if section.contains_key("BlockLight") || section.contains_key("SkyLight") {
-                    let bbytes = section.get("BlockLight")
-                        .map_or(&light_bytes_default, |tag| tag.to_u8_array().unwrap());
-                    let sbytes = section.get("SkyLight")
-                        .map_or(&light_bytes_default, |tag| tag.to_u8_array().unwrap());
+                let sbytes = section.get("SkyLight")
+                    .map_or(&light_bytes_default, |tag| tag.to_u8_array().unwrap());
+                let bbytes = section.get("BlockLight")
+                    .map_or(&light_bytes_default, |tag| tag.to_u8_array().unwrap());
 
-                    for i in 0..(BLOCKS_IN_SECTION_3D / 2) {
-                        // The bottom half of each byte, moving blocklight to the top.
-                        chunk.lights[so + i * 2] = ((bbytes[i] & 0x0f) << 4) | (sbytes[i] & 0x0f);
-                        // The top half of each byte, moving skylight to the bottom.
-                        chunk.lights[so + i * 2 + 1] = (bbytes[i] & 0xf0) | (sbytes[i] >> 4);
-                    }
+                for i in 0..(BLOCKS_IN_SECTION_3D / 2) {
+                    // The bottom half of each byte, moving blocklight to the top.
+                    chunk.lights[so + i * 2] = ((bbytes[i] & 0x0f) << 4) | (sbytes[i] & 0x0f);
+                    // The top half of each byte, moving skylight to the bottom.
+                    chunk.lights[so + i * 2 + 1] = (bbytes[i] & 0xf0) | (sbytes[i] >> 4);
                 }
             }
         } else if tag_name == "Biomes" {
