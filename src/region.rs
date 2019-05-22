@@ -176,8 +176,12 @@ pub fn read_region_chunk_coords(path: &Path) -> Result<Vec<Pair<usize>>, Error> 
 
     for cz in 0..CHUNKS_IN_REGION {
         for cx in 0..CHUNKS_IN_REGION {
-            if file.read_u32::<BigEndian>()? > 0 {
-                chunks.push(Pair { x: cx, z: cz });
+            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+                if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_some() &&
+                    nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_some() &&
+                    nbt::read_list_length(&mut reader)? > 0 {
+                    chunks.push(Pair { x: cx, z: cz });
+                }
             }
         }
     }
@@ -191,23 +195,20 @@ fn get_region_chunk_reader(file: &mut File, cx: usize, cz: usize)
     file.seek(SeekFrom::Start(co as u64))?;
 
     let offset = (file.read_u32::<BigEndian>()? >> 8) as usize * SECTOR_SIZE;
-    Ok(if offset > 0 {
+    Ok(if offset == 0 { None } else {
         file.seek(SeekFrom::Start(offset as u64))?;
         let size = file.read_u32::<BigEndian>()? as usize;
         file.seek(SeekFrom::Current(1))?;
 
         let mut reader = ZlibDecoder::new_with_buf(file, vec![0u8; size - 1]);
         nbt::read_tag_header(&mut reader)?;
+
         Some(reader)
-    } else {
-        None
     })
 }
 
 pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
 -> Result<Option<ChunkData>, Error> where R: Read {
-    // println!("Reading chunk {}, {}", cx, cz);
-
     if nbt::seek_compound_tag_name(reader, "Level")?.is_none() {
         return Ok(None);
     }
@@ -223,6 +224,9 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
     while let Some(tag_name) = nbt::seek_compound_tag_names(reader, vec!["Sections", "Biomes"])? {
         if tag_name == "Sections" {
             let slen = nbt::read_list_length(reader)?;
+            if slen == 0 {
+                return Ok(None);
+            }
 
             for _ in 0..slen {
                 let section = nbt::read_compound_tag_names(reader,

@@ -77,7 +77,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     let mut i = 0;
     let len = world.regions.len();
 
-    for r in world.regions.iter() {
+    for r in world.regions.keys() {
         i += 1;
         println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
         if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {

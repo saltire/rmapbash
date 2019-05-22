@@ -111,7 +111,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
     for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
         for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
             let r = Pair { x: rx, z: rz };
-            if !world.regions.contains(&r) {
+            if !world.regions.contains_key(&r) {
                 continue;
             }
 
