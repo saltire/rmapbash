@@ -630,7 +630,7 @@ tall_grass,,
 tall_seagrass,,
 terracotta,,
 tnt,,
-torch,,
+torch,,torch
 trapped_chest,,
 tripwire,,
 tripwire_hook,,
@@ -657,7 +657,10 @@ vine,north=true&east=true&south=true&west=true,vines north + east + south + west
 vine,north=false&east=false&south=false&west=false,vines north + east + south + west
 void_air,,empty
 wall_sign,,
-wall_torch,,
+wall_torch,facing=north,wall torch north
+wall_torch,facing=east,wall torch east
+wall_torch,facing=south,wall torch south
+wall_torch,facing=west,wall torch west
 water,,
 wet_sponge,,
 wheat,,

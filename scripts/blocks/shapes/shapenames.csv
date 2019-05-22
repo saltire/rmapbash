@@ -46,3 +46,8 @@ vines north + east + south + west
 rod upright
 rod north-south
 rod east-west
+torch
+wall torch north
+wall torch east
+wall torch south
+wall torch west
