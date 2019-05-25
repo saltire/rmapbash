@@ -21,14 +21,6 @@ impl World {
                 - self.margins.n - self.margins.s,
         }
     }
-
-    pub fn get_ortho_size(&self) -> Pair<usize> {
-        let csize = self.get_chunk_size();
-        Pair {
-            x: csize.x * BLOCKS_IN_CHUNK,
-            z: csize.z * BLOCKS_IN_CHUNK,
-        }
-    }
 }
 
 pub fn read_world_regions(path: &Path) -> Result<HashMap<Pair<i32>, Vec<Pair<usize>>>, Error> {

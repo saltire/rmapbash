@@ -10,6 +10,14 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
+
+fn get_ortho_size(csize: &Pair<usize>) -> Pair<usize> {
+    Pair {
+        x: csize.x * BLOCKS_IN_CHUNK,
+        z: csize.z * BLOCKS_IN_CHUNK,
+    }
+}
+
 fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
     co: &usize, width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
@@ -69,7 +77,8 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 
     let world = world::get_world(worldpath)?;
 
-    let size = world.get_ortho_size();
+    let csize = world.get_chunk_size();
+    let size = get_ortho_size(&csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
@@ -88,8 +97,10 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
             if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
                 println!("Drawing block map for region {}, {}", r.x, r.z);
-                let arx = (r.x - world.rlimits.w) as usize;
-                let arz = (r.z - world.rlimits.n) as usize;
+                let ar = Pair {
+                    x: (r.x - world.rlimits.w) as usize,
+                    z: (r.z - world.rlimits.n) as usize,
+                };
 
                 for cz in (0..CHUNKS_IN_REGION).rev() {
                     for cx in (0..CHUNKS_IN_REGION).rev() {
@@ -99,9 +110,11 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
                         }
 
                         // println!("Drawing chunk {}, {}", c.x, c.z);
-                        let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
-                        let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
-                        let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
+                        let ac = Pair {
+                            x: ar.x * CHUNKS_IN_REGION + c.x - world.margins.w,
+                            z: ar.z * CHUNKS_IN_REGION + c.z - world.margins.n,
+                        };
+                        let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
 
                         draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
                     }
@@ -133,20 +146,29 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
                 s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
                 w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
             };
-            let size = Pair {
-                x: (climits.e - climits.w + 1) * BLOCKS_IN_CHUNK,
-                z: (climits.s - climits.n + 1) * BLOCKS_IN_CHUNK,
+            let csize = Pair {
+                x: climits.e - climits.w + 1,
+                z: climits.s - climits.n + 1,
             };
-
+            let size = get_ortho_size(&csize);
             let mut pixels = vec![0u8; size.x * size.z * 4];
 
-            for c in reg.chunks.keys() {
-                // println!("Drawing chunk {}, {}", c.x, c.z);
-                let acx = c.x - climits.w;
-                let acz = c.z - climits.n;
-                let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
+            for cz in (0..CHUNKS_IN_REGION).rev() {
+                for cx in (0..CHUNKS_IN_REGION).rev() {
+                    let c = &Pair { x: cx, z: cz };
+                    if !reg.chunks.contains_key(c) {
+                        continue;
+                    }
 
-                draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+                    // println!("Drawing chunk {}, {}", c.x, c.z);
+                    let ac = Pair {
+                        x: c.x - climits.w,
+                        z: c.z - climits.n,
+                    };
+                    let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
+
+                    draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+                }
             }
 
             let file = File::create(outpath)?;
