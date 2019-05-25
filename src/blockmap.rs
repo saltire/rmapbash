@@ -77,24 +77,38 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     let mut i = 0;
     let len = world.regions.len();
 
-    for r in world.regions.keys() {
-        i += 1;
-        println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-        if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
-            println!("Drawing block map for region {}, {}", r.x, r.z);
-            let arx = (r.x - world.rlimits.w) as usize;
-            let arz = (r.z - world.rlimits.n) as usize;
-
-            for c in reg.chunks.keys() {
-                // println!("Drawing chunk {}, {}", c.x, c.z);
-                let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
-                let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
-                let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
-
-                draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+    for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
+        for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
+            let r = Pair { x: rx, z: rz };
+            if !world.regions.contains_key(&r) {
+                continue;
             }
-        } else {
-            println!("No data in region.");
+
+            i += 1;
+            println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
+            if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
+                println!("Drawing block map for region {}, {}", r.x, r.z);
+                let arx = (r.x - world.rlimits.w) as usize;
+                let arz = (r.z - world.rlimits.n) as usize;
+
+                for cz in (0..CHUNKS_IN_REGION).rev() {
+                    for cx in (0..CHUNKS_IN_REGION).rev() {
+                        let c = &Pair { x: cx, z: cz };
+                        if !reg.chunks.contains_key(c) {
+                            continue;
+                        }
+
+                        // println!("Drawing chunk {}, {}", c.x, c.z);
+                        let acx = arx * CHUNKS_IN_REGION + c.x - world.margins.w;
+                        let acz = arz * CHUNKS_IN_REGION + c.z - world.margins.n;
+                        let co = (acz * size.x + acx) * BLOCKS_IN_CHUNK;
+
+                        draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+                    }
+                }
+            } else {
+                println!("No data in region.");
+            }
         }
     }
 
