@@ -9,9 +9,8 @@ blocktexdir = datadir + '/assets/minecraft/textures/block/'
 
 currentdir = os.path.dirname(__file__)
 
-
-# Get average colors from texture images (and save them in texturecolors.csv for reference).
-
+def get_texturecolors():
+    '''Get average colors from texture images.'''
 texturecolors = {}
 for imgfile in sorted(os.listdir(blocktexdir)):
     if imgfile[-4:] != '.png':
@@ -56,10 +55,15 @@ for imgfile in sorted(os.listdir(blocktexdir)):
             l = int(sum(rr) / len(rr))
             color = (l, l, l, int(sum(aa) / len(aa)))
 
-    texturecolors[imgfile[:-4]] = color
+        texturecolors[imgfile[:-4]] = color
 
-with open(os.path.join(currentdir, 'texturecolors.csv'), 'w') as csvfile:
-    writer = csv.writer(csvfile)
+    return texturecolors
+
+if __name__ == '__main__':
+    texturecolors = get_texturecolors()
+
+    with open(os.path.join(currentdir, 'texturecolors.csv'), 'w') as csvfile:
+        writer = csv.writer(csvfile)
 
     for texture, color in texturecolors.items():
         writer.writerow([texture, *color])

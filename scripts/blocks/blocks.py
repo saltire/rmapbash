@@ -3,12 +3,11 @@ import os
 
 from PIL import Image
 
+from shapes.shapes import get_shapes
+from textures.textures import get_texturecolors
 
-datadir = '[path to contents of extracted minecraft version .jar file]'
-blocktexdir = datadir + '/assets/minecraft/textures/block/'
 
 currentdir = os.path.dirname(__file__)
-
 
 # Read data from csv.
 
@@ -50,17 +49,19 @@ with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
         block, biome = line.strip().split(',')
         biomes[block] = biome
 
-texturecolors = {}
-with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
-    for line in csvfile.readlines():
-        texture, r, g, b, a = line.strip().split(',')
-        texturecolors[texture] = r, g, b, a
+texturecolors = get_texturecolors()
+# texturecolors = {}
+# with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         texture, r, g, b, a = line.strip().split(',')
+#         texturecolors[texture] = r, g, b, a
 
-shapes = {}
-with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
-    for line in csvfile.readlines():
-        shapename, shape = line.strip().split(',')
-        shapes[shapename] = shape
+shapes = get_shapes()
+# shapes = {}
+# with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         shapename, shape = line.strip().split(',')
+#         shapes[shapename] = shape
 
 blockshapes = {}
 with open(os.path.join(currentdir, 'shapes/blockshapes.csv'), 'r') as csvfile:
