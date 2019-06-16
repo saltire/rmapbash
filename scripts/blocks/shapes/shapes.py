@@ -39,6 +39,7 @@ def get_shapes():
 
     return shapes
 
+
 if __name__ == '__main__':
     shapes = get_shapes()
 
