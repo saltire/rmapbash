@@ -70,7 +70,6 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-#[allow(dead_code)]
 pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
@@ -81,21 +80,19 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     let size = get_ortho_size(&csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-
     let mut i = 0;
     let len = world.regions.len();
 
     for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
         for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
-            let r = Pair { x: rx, z: rz };
+            let r = &Pair { x: rx, z: rz };
             if !world.regions.contains_key(&r) {
                 continue;
             }
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
+            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
                 println!("Drawing block map for region {}, {}", r.x, r.z);
                 let ar = Pair {
                     x: (r.x - world.rlimits.w) as usize,
@@ -116,7 +113,7 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
                         };
                         let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
 
-                        draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+                        draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
                     }
                 }
             } else {
@@ -131,12 +128,10 @@ pub fn draw_world_block_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     Ok(())
 }
 
-#[allow(dead_code)]
 pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
-    let blocknames: Vec<&str> = blocktypes.iter().map(|b| &b.name[..]).collect();
-    if let Some(reg) = region::read_region_data(worldpath, &r, &blocknames)? {
+    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
         if reg.chunks.keys().len() > 0 {
             println!("Drawing block map");
 
@@ -167,7 +162,7 @@ pub fn draw_region_block_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, bl
                     };
                     let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
 
-                    draw_chunk(&mut pixels, &blocktypes, &reg.get_chunk(c), &co, &size.x);
+                    draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
                 }
             }
 

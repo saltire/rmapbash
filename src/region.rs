@@ -12,6 +12,7 @@ use flate2::read::ZlibDecoder;
 
 use regex::Regex;
 
+use super::blocktypes::BlockType;
 use super::nbt;
 use super::sizes::*;
 use super::types::*;
@@ -207,7 +208,7 @@ fn get_region_chunk_reader(file: &mut File, cx: usize, cz: usize)
     })
 }
 
-pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
+pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
 -> Result<Option<ChunkData>, Error> where R: Read {
     if nbt::seek_compound_tag_name(reader, "Level")?.is_none() {
         return Ok(None);
@@ -246,7 +247,7 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
                     for ptag in palette {
                         let pblock = ptag.to_hashmap()?;
                         let name = pblock["Name"].to_str()?;
-                        pblocks.push(blocknames.iter().position(|b| b == &name).unwrap() as u16);
+                        pblocks.push(blocktypes.iter().position(|b| b.name == name).unwrap() as u16);
                     }
 
                     // BlockStates is an array of i64 representing 4096 blocks,
@@ -292,7 +293,7 @@ pub fn read_region_chunk<R>(reader: &mut R, blocknames: &[&str])
     Ok(Some(chunk))
 }
 
-fn read_region_chunk_data(path: &Path, margins: &Edges<usize>, blocknames: &[&str])
+fn read_region_chunk_data(path: &Path, margins: &Edges<usize>, blocktypes: &[BlockType])
 -> Result<HashMap<Pair<usize>, ChunkData>, Box<Error>> {
     let mut chunks = HashMap::new();
 
@@ -302,7 +303,7 @@ fn read_region_chunk_data(path: &Path, margins: &Edges<usize>, blocknames: &[&st
         for cz in margins.n..(CHUNKS_IN_REGION - margins.s) {
             for cx in margins.w..(CHUNKS_IN_REGION - margins.e) {
                 if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
-                    if let Some(chunk) = read_region_chunk(&mut reader, blocknames)? {
+                    if let Some(chunk) = read_region_chunk(&mut reader, blocktypes)? {
                         chunks.insert(Pair { x: cx, z: cz }, chunk);
                     }
                 }
@@ -313,8 +314,7 @@ fn read_region_chunk_data(path: &Path, margins: &Edges<usize>, blocknames: &[&st
     Ok(chunks)
 }
 
-#[allow(dead_code)]
-pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &[&str])
+pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType])
 -> Result<Option<Region>, Box<Error>> {
     let regionpath = get_path_from_coords(worldpath, &r);
     if !regionpath.exists() {
@@ -335,12 +335,12 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocknames: &[&str])
     };
 
     Ok(Some(Region {
-        chunks: read_region_chunk_data(&regionpath, &Edges::default(), blocknames)?,
+        chunks: read_region_chunk_data(&regionpath, &Edges::default(), blocktypes)?,
         nchunks: Edges {
-            n: read_region_chunk_data(&npaths.n, &nmargins.n, blocknames)?,
-            e: read_region_chunk_data(&npaths.e, &nmargins.e, blocknames)?,
-            s: read_region_chunk_data(&npaths.s, &nmargins.s, blocknames)?,
-            w: read_region_chunk_data(&npaths.w, &nmargins.w, blocknames)?,
+            n: read_region_chunk_data(&npaths.n, &nmargins.n, blocktypes)?,
+            e: read_region_chunk_data(&npaths.e, &nmargins.e, blocktypes)?,
+            s: read_region_chunk_data(&npaths.s, &nmargins.s, blocktypes)?,
+            w: read_region_chunk_data(&npaths.w, &nmargins.w, blocktypes)?,
         },
     }))
 }
