@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::io::{Error, ErrorKind, Read};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
 
+#[derive(Debug)]
 pub enum Tag {
     Byte(u8),
     Short(u16),
@@ -59,6 +61,25 @@ impl Tag {
         match self {
             Tag::LongArray(vec) => Ok(vec),
             _ => Err(Error::new(ErrorKind::InvalidData, "Invalid long array tag"))
+        }
+    }
+}
+
+impl fmt::Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Tag::Byte(value) => write!(f, "Byte({})", value),
+            Tag::Short(value) => write!(f, "Short({})", value),
+            Tag::Int(value) => write!(f, "Int({})", value),
+            Tag::Long(value) => write!(f, "Long({})", value),
+            Tag::Float(value) => write!(f, "Float({})", value),
+            Tag::Double(value) => write!(f, "Double({})", value),
+            Tag::ByteArray(_) => write!(f, "ByteArray"),
+            Tag::String(value) => write!(f, "String({})", value),
+            Tag::List(_) => write!(f, "List"),
+            Tag::Compound(_) => write!(f, "Compound"),
+            Tag::IntArray(_) => write!(f, "IntArray"),
+            Tag::LongArray(_) => write!(f, "LongArray"),
         }
     }
 }
