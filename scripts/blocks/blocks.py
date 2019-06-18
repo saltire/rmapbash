@@ -68,7 +68,7 @@ shapes = get_shapes()
 #         shapes[shapename] = shape
 
 def get_block_color(block, key):
-    method, value = blocks[block].get(key, (None, None))
+    method, value = blocks.get(block, {}).get(key, (None, None))
 
     if method == 'color':
         return value
@@ -86,18 +86,20 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
     writer.writerow(['', '', '', '', '', '', '', '', '', '', '', ''])
 
     for block in blocknames:
-        color1 = get_block_color(block, 'color1')
-        color2 = get_block_color(block, 'color2')
-
-        if color1 is None:
+        if block not in blocks:
             print('No texture for', block)
 
-        for state, shapename in blocks[block].get('stateshapes', {}).items():
+        color1 = get_block_color(block, 'color1')
+        color2 = get_block_color(block, 'color2')
+        biome = blocks.get(block, {}).get('biome', '')
+        stateshapes = blocks.get(block, {}).get('stateshapes', {'': 'solid shadows'})
+
+        for state, shapename in stateshapes.items():
             writer.writerow([
                 block,
                 *(color1 or ('', '', '', '')),
                 *(color2 or ('', '', '', '')),
-                blocks[block].get('biome', ''),
+                biome,
                 state,
                 shapes[shapename],
             ])
