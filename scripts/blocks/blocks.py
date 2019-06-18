@@ -23,25 +23,25 @@ with open(os.path.join(currentdir, 'blockcolors.csv'), 'r') as csvfile:
         if (r2, g2, b2, a2) != ('', '', '', ''):
             blockcolors2[block] = r2, g2, b2, a2
 
-copyblock = {}
-copyblock2 = {}
-with open(os.path.join(currentdir, 'copyblock.csv'), 'r') as csvfile:
+copyblockcolor = {}
+copyblockcolor2 = {}
+with open(os.path.join(currentdir, 'copyblockcolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, blocktocopy, blocktocopy2 = line.strip().split(',')
         if blocktocopy != '':
-            copyblock[block] = blocktocopy
+            copyblockcolor[block] = blocktocopy
         if blocktocopy2 != '':
-            copyblock2[block] = blocktocopy2
+            copyblockcolor2[block] = blocktocopy2
 
-copytexture = {}
-copytexture2 = {}
-with open(os.path.join(currentdir, 'copytexture.csv'), 'r') as csvfile:
+copytexturecolor = {}
+copytexturecolor2 = {}
+with open(os.path.join(currentdir, 'copytexturecolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, texture, texture2 = line.strip().split(',')
         if texture != '':
-            copytexture[block] = texture
+            copytexturecolor[block] = texture
         if texture2 != '':
-            copytexture2[block] = texture2
+            copytexturecolor2[block] = texture2
 
 biomes = {}
 with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
@@ -84,30 +84,30 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
 
         if block in blockcolors:
             color = blockcolors[block]
-        elif block in copytexture:
-            texture = copytexture[block]
+        elif block in copytexturecolor:
+            texture = copytexturecolor[block]
             color = texturecolors[texture]
-        elif block in copyblock:
-            blocktocopy = copyblock[block]
+        elif block in copyblockcolor:
+            blocktocopy = copyblockcolor[block]
             if blocktocopy in blockcolors:
                 color = blockcolors[blocktocopy]
-            elif blocktocopy in copytexture:
-                texture = copytexture[blocktocopy]
+            elif blocktocopy in copytexturecolor:
+                texture = copytexturecolor[blocktocopy]
                 color = texturecolors[texture]
 
         if block in blockcolors2:
             color2 = blockcolors2[block]
-        elif block in copytexture2:
-            texture = copytexture2[block]
+        elif block in copytexturecolor2:
+            texture = copytexturecolor2[block]
             color2 = texturecolors[texture]
-        elif block in copyblock2:
-            blocktocopy = copyblock2[block]
+        elif block in copyblockcolor2:
+            blocktocopy = copyblockcolor2[block]
             # Copy from block's primary color.
             if blocktocopy in blockcolors:
                 color2 = blockcolors[blocktocopy]
-            elif blocktocopy in copytexture:
+            elif blocktocopy in copytexturecolor:
                 # Copy from block's primary texture color.
-                texture = copytexture[blocktocopy]
+                texture = copytexturecolor[blocktocopy]
                 color2 = texturecolors[texture]
 
         if color is None:
