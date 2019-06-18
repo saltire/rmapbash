@@ -247,7 +247,18 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
                     for ptag in palette {
                         let pblock = ptag.to_hashmap()?;
                         let name = pblock["Name"].to_str()?;
-                        pblocks.push(blocktypes.iter().position(|b| b.name == name).unwrap() as u16);
+                        let mut props = HashMap::new();
+                        if pblock.contains_key("Properties") {
+                            for (k, v) in pblock["Properties"].to_hashmap()?.iter() {
+                                props.insert(k, v.to_str()?);
+                            }
+                        }
+                        pblocks.push(blocktypes.iter()
+                            .position(|b| {
+                                b.name == name &&
+                                b.state.iter().all(|(k, v)| props[k] == v)
+                            })
+                            .unwrap() as u16);
                     }
 
                     // BlockStates is an array of i64 representing 4096 blocks,

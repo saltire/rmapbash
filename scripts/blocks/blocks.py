@@ -64,13 +64,10 @@ shapes = get_shapes()
 #         shapes[shapename] = shape
 
 blockshapes = {}
-with open(os.path.join(currentdir, 'shapes/blockshapes.csv'), 'r') as csvfile:
+with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, state, shapename = line.strip().split(',')
-        # TODO: store multiple shapes for blocks with multiple states. For now, take the last one.
-        # states = {s[0]: s[1] for s in map(lambda st: st.split('='), state.split('&'))}
-        if shapename != '':
-            blockshapes[block] = shapename
+        blockshapes.setdefault(block, {})[state] = shapename or 'solid shadows'
 
 
 # Compile final blocks.csv from all read data.
@@ -78,8 +75,8 @@ with open(os.path.join(currentdir, 'shapes/blockshapes.csv'), 'r') as csvfile:
 with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfile:
     writer = csv.writer(csvfile)
 
-    writer.writerow(['name', 'r', 'g', 'b', 'a', 'r2', 'g2', 'b2', 'a2', 'biome', 'shape'])
-    writer.writerow(['', '', '', '', '', '', '', '', '', '', ''])
+    writer.writerow(['name', 'r', 'g', 'b', 'a', 'r2', 'g2', 'b2', 'a2', 'biome', 'state', 'shape'])
+    writer.writerow(['', '', '', '', '', '', '', '', '', '', '', ''])
 
     for block in blocknames:
         color = None
@@ -116,12 +113,12 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
         if color is None:
             print('No texture for', block)
 
-        shapename = blockshapes.get(block, 'solid shadows')
-
-        writer.writerow([
-            block,
-            *(color or ('', '', '', '')),
-            *(color2 or ('', '', '', '')),
-            biomes.get(block, ''),
-            shapes[shapename],
-        ])
+        for state, shapename in blockshapes.get(block, {}).items():
+            writer.writerow([
+                block,
+                *(color or ('', '', '', '')),
+                *(color2 or ('', '', '', '')),
+                biomes.get(block, ''),
+                state,
+                shapes[shapename],
+            ])

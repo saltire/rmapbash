@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use csv::Reader;
@@ -21,6 +22,7 @@ struct BlockRow {
     b2: Option<u8>,
     a2: Option<u8>,
     biome: Option<u8>,
+    state: String,
     shape: String,
 }
 
@@ -36,6 +38,7 @@ struct LightRow {
 pub struct BlockType {
     pub name: String,
     pub colors: [[[[RGBA; 7]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
+    pub state: HashMap<String, String>,
     pub shape: [[usize; ISO_BLOCK_WIDTH]; ISO_BLOCK_HEIGHT],
     pub empty: bool,
 }
@@ -118,6 +121,16 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
             }
         }
 
+        // Convert state string into a key-value hashmap.
+        let mut state = HashMap::new();
+        for pair in row.state.split("&") {
+            if pair != "" {
+                let mut kv = pair.split("=");
+                state.insert(kv.next().unwrap().to_string(), kv.next().unwrap().to_string());
+            }
+        }
+
+        // Convert shape string into a nested X,Y array.
         let mut shape = [[0usize; ISO_BLOCK_HEIGHT]; ISO_BLOCK_WIDTH];
         let mut chars = row.shape.as_str().chars();
         for y in 0..ISO_BLOCK_HEIGHT {
@@ -130,6 +143,7 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
             name: format!("minecraft:{}", row.name),
             colors: blockcolors,
             shape: shape,
+            state: state,
             empty: row.shape == "" || row.shape == "0000000000000000",
         });
     }
