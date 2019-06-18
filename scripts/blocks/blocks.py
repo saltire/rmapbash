@@ -20,25 +20,25 @@ with open(os.path.join(currentdir, 'blockcolors.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, r1, g1, b1, a1, r2, g2, b2, a2 = line.strip().split(',')
         if (r1, g1, b1, a1) != ('', '', '', ''):
-            blocks.setdefault(block, {})['color1'] = 'color', (r1, g1, b1, a1)
+            blocks.setdefault(block, {})['color1'] = {'color': (r1, g1, b1, a1)}
         if (r2, g2, b2, a2) != ('', '', '', ''):
-            blocks.setdefault(block, {})['color2'] = 'color', (r2, g2, b2, a2)
+            blocks.setdefault(block, {})['color2'] = {'color': (r2, g2, b2, a2)}
 
 with open(os.path.join(currentdir, 'copyblockcolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, blocktocopy1, blocktocopy2 = line.strip().split(',')
         if blocktocopy1 != '':
-            blocks.setdefault(block, {})['color1'] = 'copyblock', blocktocopy1
+            blocks.setdefault(block, {})['color1'] = {'copyblock': blocktocopy1}
         if blocktocopy2 != '':
-            blocks.setdefault(block, {})['color2'] = 'copyblock', blocktocopy2
+            blocks.setdefault(block, {})['color2'] = {'copyblock': blocktocopy2}
 
 with open(os.path.join(currentdir, 'copytexturecolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, texture1, texture2 = line.strip().split(',')
         if texture1 != '':
-            blocks.setdefault(block, {})['color1'] = 'copytexture', texture1
+            blocks.setdefault(block, {})['color1'] = {'copytexture': texture1}
         if texture2 != '':
-            blocks.setdefault(block, {})['color2'] = 'copytexture', texture2
+            blocks.setdefault(block, {})['color2'] = {'copytexture': texture2}
 
 with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
@@ -48,8 +48,13 @@ with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
 with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, state, shapename = line.strip().split(',')
-        blocks.setdefault(block, {}).setdefault('stateshapes', {})[state] = (
-            shapename or 'solid shadows')
+        (blocks.setdefault(block, {}).setdefault('shape', {}).setdefault('states', {})
+            [state]) = shapename
+
+with open(os.path.join(currentdir, 'copyblockshapes.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, blocktocopy = line.strip().split(',')
+        blocks.setdefault(block, {})['shape'] = {'copyblock': blocktocopy}
 
 # Get texture/shape data.
 
@@ -68,15 +73,26 @@ shapes = get_shapes()
 #         shapes[shapename] = shape
 
 def get_block_color(block, key):
-    method, value = blocks.get(block, {}).get(key, (None, None))
+    colordata = blocks.get(block, {}).get(key, {})
 
-    if method == 'color':
-        return value
-    if method == 'copytexture':
-        return texturecolors[value]
-    if method == 'copyblock':
+    if 'color' in colordata:
+        return colordata['color']
+    if 'copytexture' in colordata:
+        return texturecolors[colordata['copytexture']]
+    if 'copyblock' in colordata:
         # Copy the block's primary color (for now).
-        return get_block_color(value, 'color1')
+        return get_block_color(colordata['copyblock'], 'color1')
+
+def get_block_shapes(block):
+    shapedata = blocks.get(block, {}).get('shape', {})
+
+    if 'states' in shapedata:
+        return shapedata['states']
+    if 'copyblock' in shapedata:
+        return get_block_shapes(shapedata['copyblock'])
+
+    return {'': 'solid shadows'}
+
 
 # Compile final blocks.csv from all read data.
 with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfile:
@@ -92,7 +108,7 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
         color1 = get_block_color(block, 'color1')
         color2 = get_block_color(block, 'color2')
         biome = blocks.get(block, {}).get('biome', '')
-        stateshapes = blocks.get(block, {}).get('stateshapes', {'': 'solid shadows'})
+        stateshapes = get_block_shapes(block)
 
         for state, shapename in stateshapes.items():
             writer.writerow([

@@ -1,52 +1,24 @@
-acacia_fence,,fence
-acacia_pressure_plate,,small flat
 air,,empty
 azure_bluet,,small square shadows
 bamboo,,rod upright
-birch_fence,,fence
-birch_pressure_plate,,small flat
-black_carpet,,flat
-blue_carpet,,flat
 blue_orchid,,small square shadows
-brown_carpet,,flat
 brown_mushroom,,small square shadows
 cave_air,,empty
 cornflower,,small square shadows
-cyan_carpet,,flat
 dandelion,,small square shadows
-dark_oak_fence,,fence
-dark_oak_pressure_plate,,small flat
 grass,,grass
 grass_block,,alternate colour bottom half
 grass_path,,alternate colour bottom half
-gray_carpet,,flat
-green_carpet,,flat
-heavy_weighted_pressure_plate,,small flat
-jungle_fence,,fence
-jungle_pressure_plate,,small flat
-light_blue_carpet,,flat
-light_gray_carpet,,flat
-light_weighted_pressure_plate,,small flat
 lily_of_the_valley,,small square shadows
 lily_pad,,small flat
-lime_carpet,,flat
-magenta_carpet,,flat
-nether_brick_fence,,fence
 oak_fence,,fence
 oak_pressure_plate,,small flat
-orange_carpet,,flat
 orange_tulip,,small square shadows
 oxeye_daisy,,small square shadows
-pink_carpet,,flat
 pink_tulip,,small square shadows
 poppy,,small square shadows
-purple_carpet,,flat
-red_carpet,,flat
 red_mushroom,,small square shadows
 red_tulip,,small square shadows
-spruce_fence,,fence
-spruce_pressure_plate,,small flat
-stone_pressure_plate,,small flat
 sugar_cane,,reeds
 torch,,torch
 vine,north=true&east=false&south=false&west=false,vines north
@@ -73,4 +45,3 @@ wall_torch,facing=west,wall torch west
 white_carpet,,flat
 white_tulip,,small square shadows
 wither_rose,,small square shadows
-yellow_carpet,,flat
