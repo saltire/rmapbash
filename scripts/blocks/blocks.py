@@ -9,45 +9,49 @@ from textures.textures import get_texturecolors
 
 currentdir = os.path.dirname(__file__)
 
-# Read data from csv.
-
+# Get a list of all blocks.
 with open(os.path.join(currentdir, 'blocknames.csv'), 'r') as csvfile:
     blocknames = [b.strip() for b in csvfile.readlines()]
 
-blockcolors = {}
-blockcolors2 = {}
+# Get color data for each block.
+blocks = {}
+
 with open(os.path.join(currentdir, 'blockcolors.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
-        block, r, g, b, a, r2, g2, b2, a2 = line.strip().split(',')
-        blockcolors[block] = r, g, b, a
+        block, r1, g1, b1, a1, r2, g2, b2, a2 = line.strip().split(',')
+        if (r1, g1, b1, a1) != ('', '', '', ''):
+            blocks.setdefault(block, {})['color1'] = 'color', (r1, g1, b1, a1)
         if (r2, g2, b2, a2) != ('', '', '', ''):
-            blockcolors2[block] = r2, g2, b2, a2
+            blocks.setdefault(block, {})['color2'] = 'color', (r2, g2, b2, a2)
 
-copyblockcolor = {}
-copyblockcolor2 = {}
 with open(os.path.join(currentdir, 'copyblockcolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
-        block, blocktocopy, blocktocopy2 = line.strip().split(',')
-        if blocktocopy != '':
-            copyblockcolor[block] = blocktocopy
+        block, blocktocopy1, blocktocopy2 = line.strip().split(',')
+        if blocktocopy1 != '':
+            blocks.setdefault(block, {})['color1'] = 'copyblock', blocktocopy1
         if blocktocopy2 != '':
-            copyblockcolor2[block] = blocktocopy2
+            blocks.setdefault(block, {})['color2'] = 'copyblock', blocktocopy2
 
-copytexturecolor = {}
-copytexturecolor2 = {}
 with open(os.path.join(currentdir, 'copytexturecolor.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
-        block, texture, texture2 = line.strip().split(',')
-        if texture != '':
-            copytexturecolor[block] = texture
+        block, texture1, texture2 = line.strip().split(',')
+        if texture1 != '':
+            blocks.setdefault(block, {})['color1'] = 'copytexture', texture1
         if texture2 != '':
-            copytexturecolor2[block] = texture2
+            blocks.setdefault(block, {})['color2'] = 'copytexture', texture2
 
-biomes = {}
 with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, biome = line.strip().split(',')
-        biomes[block] = biome
+        blocks.setdefault(block, {})['biome'] = biome
+
+with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, state, shapename = line.strip().split(',')
+        blocks.setdefault(block, {}).setdefault('stateshapes', {})[state] = (
+            shapename or 'solid shadows')
+
+# Get texture/shape data.
 
 texturecolors = get_texturecolors()
 # texturecolors = {}
@@ -63,15 +67,18 @@ shapes = get_shapes()
 #         shapename, shape = line.strip().split(',')
 #         shapes[shapename] = shape
 
-blockshapes = {}
-with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
-    for line in csvfile.readlines():
-        block, state, shapename = line.strip().split(',')
-        blockshapes.setdefault(block, {})[state] = shapename or 'solid shadows'
+def get_block_color(block, key):
+    method, value = blocks[block].get(key, (None, None))
 
+    if method == 'color':
+        return value
+    if method == 'copytexture':
+        return texturecolors[value]
+    if method == 'copyblock':
+        # Copy the block's primary color (for now).
+        return get_block_color(value, 'color1')
 
 # Compile final blocks.csv from all read data.
-
 with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfile:
     writer = csv.writer(csvfile)
 
@@ -79,46 +86,18 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
     writer.writerow(['', '', '', '', '', '', '', '', '', '', '', ''])
 
     for block in blocknames:
-        color = None
-        color2 = None
+        color1 = get_block_color(block, 'color1')
+        color2 = get_block_color(block, 'color2')
 
-        if block in blockcolors:
-            color = blockcolors[block]
-        elif block in copytexturecolor:
-            texture = copytexturecolor[block]
-            color = texturecolors[texture]
-        elif block in copyblockcolor:
-            blocktocopy = copyblockcolor[block]
-            if blocktocopy in blockcolors:
-                color = blockcolors[blocktocopy]
-            elif blocktocopy in copytexturecolor:
-                texture = copytexturecolor[blocktocopy]
-                color = texturecolors[texture]
-
-        if block in blockcolors2:
-            color2 = blockcolors2[block]
-        elif block in copytexturecolor2:
-            texture = copytexturecolor2[block]
-            color2 = texturecolors[texture]
-        elif block in copyblockcolor2:
-            blocktocopy = copyblockcolor2[block]
-            # Copy from block's primary color.
-            if blocktocopy in blockcolors:
-                color2 = blockcolors[blocktocopy]
-            elif blocktocopy in copytexturecolor:
-                # Copy from block's primary texture color.
-                texture = copytexturecolor[blocktocopy]
-                color2 = texturecolors[texture]
-
-        if color is None:
+        if color1 is None:
             print('No texture for', block)
 
-        for state, shapename in blockshapes.get(block, {}).items():
+        for state, shapename in blocks[block].get('stateshapes', {}).items():
             writer.writerow([
                 block,
-                *(color or ('', '', '', '')),
+                *(color1 or ('', '', '', '')),
                 *(color2 or ('', '', '', '')),
-                biomes.get(block, ''),
+                blocks[block].get('biome', ''),
                 state,
                 shapes[shapename],
             ])
