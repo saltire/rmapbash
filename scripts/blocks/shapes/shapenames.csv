@@ -5,7 +5,6 @@ flat
 small square shadows
 small square no shadows
 grass
-alternate colour bottom half
 half block
 inverted half block
 stairs north
@@ -20,6 +19,7 @@ small flat
 alternate colour sides
 alternate colour left side
 alternate colour right side
+alternate colour bottom half
 inverted flat
 flat with alternate colour
 fence
@@ -46,9 +46,14 @@ vines north + east + south + west
 rod upright
 rod north-south
 rod east-west
-torch
+small one colour
+small two colour
 wall torch north
 wall torch east
 wall torch south
 wall torch west
 reeds
+flower bush top
+sunflower top
+flower bush bottom
+sunflower bottom

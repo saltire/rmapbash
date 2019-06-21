@@ -53,19 +53,18 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
                 // This prevents stripes appearing in columns of translucent blocks.
                 let skip_top = tblock.btype == btype;
 
-                // TODO: once we implement shapes, add hilight/shadow when the adjacent block
-                // has skylight and isn't a solid shape (i.e., has gaps).
-
-                // Add a hilight if block to the left has skylight and is not the same as this one.
+                // Add a hilight if block to the left has skylight and is not solid.
                 let lblock = chunk.get_s_block(&bz, &bo3);
-                let lshade = if lblock.slight > 0 && lblock.btype != btype { 2 } else { 1 };
+                let lblocktype = &blocktypes[lblock.btype as usize];
+                let lshade = if lblock.slight > 0 && !lblocktype.solid { 2 } else { 1 };
                 let lcolor = &blocktype.colors[biome][lblock.slight][lblock.blight][lshade];
                 let lcolor2 = &blocktype.colors[biome][lblock.slight][lblock.blight][lshade + 3];
 
-                // Add a shadow if block to the right has skylight and is not the same as this one.
+                // Add a shadow if block to the right has skylight and is not solid.
                 // let rblock = chunk.get_s_block(&bz, &bo3);
                 let rblock = chunk.get_e_block(&bx, &bo3);
-                let rshade = if rblock.slight > 0 && rblock.btype != btype { 3 } else { 1 };
+                let rblocktype = &blocktypes[rblock.btype as usize];
+                let rshade = if rblock.slight > 0 && !rblocktype.solid { 3 } else { 1 };
                 let rcolor = &blocktype.colors[biome][rblock.slight][rblock.blight][rshade];
                 let rcolor2 = &blocktype.colors[biome][rblock.slight][rblock.blight][rshade + 3];
 

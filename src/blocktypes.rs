@@ -40,6 +40,7 @@ pub struct BlockType {
     pub colors: [[[[RGBA; 7]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
     pub state: HashMap<String, String>,
     pub shape: [[usize; ISO_BLOCK_WIDTH]; ISO_BLOCK_HEIGHT],
+    pub solid: bool,
     pub empty: bool,
 }
 
@@ -144,6 +145,7 @@ pub fn get_block_types(night: &bool) -> Vec<BlockType> {
             colors: blockcolors,
             shape: shape,
             state: state,
+            solid: row.shape.find('0').is_none(),
             empty: row.shape == "" || row.shape == "0000000000000000",
         });
     }

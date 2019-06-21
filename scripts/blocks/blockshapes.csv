@@ -1,26 +1,46 @@
 air,,empty
-azure_bluet,,small square shadows
+allium,,small two colour
+azure_bluet,,small two colour
 bamboo,,rod upright
-blue_orchid,,small square shadows
-brown_mushroom,,small square shadows
+blue_orchid,,small two colour
+brown_mushroom,,small one colour
 cave_air,,empty
-cornflower,,small square shadows
-dandelion,,small square shadows
+cornflower,,small two colour
+dandelion,,small two colour
 grass,,grass
 grass_block,,alternate colour bottom half
-grass_path,,alternate colour bottom half
-lily_of_the_valley,,small square shadows
+grass_path,,alternate colour sides
+lilac,half=lower,flower bush bottom
+lilac,half=upper,flower bush top
+lily_of_the_valley,,small two colour
 lily_pad,,small flat
 oak_fence,,fence
 oak_pressure_plate,,small flat
-orange_tulip,,small square shadows
-oxeye_daisy,,small square shadows
-pink_tulip,,small square shadows
-poppy,,small square shadows
-red_mushroom,,small square shadows
-red_tulip,,small square shadows
+oak_slab,type=bottom,half block
+oak_slab,type=top,inverted half block
+oak_slab,type=double,solid shadows
+oak_stairs,facing=north&half=bottom,stairs north
+oak_stairs,facing=east&half=bottom,stairs east
+oak_stairs,facing=south&half=bottom,stairs south
+oak_stairs,facing=west&half=bottom,stairs west
+oak_stairs,facing=north&half=top,stairs inverted north
+oak_stairs,facing=east&half=top,stairs inverted east
+oak_stairs,facing=south&half=top,stairs inverted south
+oak_stairs,facing=west&half=top,stairs inverted west
+orange_tulip,,small two colour
+oxeye_daisy,,small two colour
+peony,half=lower,flower bush bottom
+peony,half=upper,flower bush top
+pink_tulip,,small two colour
+poppy,,small two colour
+red_mushroom,,small two colour
+red_tulip,,small two colour
+rose_bush,half=lower,flower bush bottom
+rose_bush,half=upper,flower bush top
 sugar_cane,,reeds
-torch,,torch
+sunflower,half=lower,sunflower bottom
+sunflower,half=upper,sunflower top
+torch,,small two colour
 vine,north=true&east=false&south=false&west=false,vines north
 vine,north=false&east=true&south=false&west=false,vines east
 vine,north=false&east=false&south=true&west=false,vines south
@@ -43,5 +63,5 @@ wall_torch,facing=east,wall torch east
 wall_torch,facing=south,wall torch south
 wall_torch,facing=west,wall torch west
 white_carpet,,flat
-white_tulip,,small square shadows
-wither_rose,,small square shadows
+white_tulip,,small two colour
+wither_rose,,small two colour
