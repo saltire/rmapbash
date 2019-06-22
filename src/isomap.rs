@@ -49,9 +49,9 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
                 let tblock = chunk.get_t_block(&by, &bo3);
                 let tcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][1];
                 let tcolor2 = &blocktype.colors[biome][tblock.slight][tblock.blight][4];
-                // Don't draw the top if the block above is the same as this one.
+                // Don't draw the top if the block above is the same as this one and solid.
                 // This prevents stripes appearing in columns of translucent blocks.
-                let skip_top = tblock.btype == btype;
+                let skip_top = tblock.btype == btype && blocktype.solid;
 
                 // Add a hilight if block to the left has skylight and is not solid.
                 let lblock = chunk.get_s_block(&bz, &bo3);

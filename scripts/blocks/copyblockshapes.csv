@@ -26,6 +26,7 @@ granite_slab,oak_slab
 gray_carpet,white_carpet
 green_carpet,white_carpet
 heavy_weighted_pressure_plate,oak_pressure_plate
+jack_o_lantern,carved_pumpkin
 jungle_fence,oak_fence
 jungle_pressure_plate,oak_pressure_plate
 jungle_slab,oak_slab
@@ -45,6 +46,7 @@ pink_carpet,white_carpet
 polished_andesite_slab,oak_slab
 polished_diorite_slab,oak_slab
 polished_granite_slab,oak_slab
+potatoes,carrots
 prismarine_brick_slab,oak_slab
 prismarine_slab,oak_slab
 purple_carpet,white_carpet

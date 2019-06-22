@@ -2,6 +2,8 @@ empty
 solid shadows
 solid no shadows
 flat
+inverted flat
+flat alternate colour
 small square shadows
 small square no shadows
 grass
@@ -20,8 +22,9 @@ alternate colour sides
 alternate colour left side
 alternate colour right side
 alternate colour bottom half
-inverted flat
-flat with alternate colour
+alternate colour middle
+alternate colour middle left
+alternate colour middle right
 fence
 fire
 ladder facing north
@@ -57,3 +60,7 @@ flower bush top
 sunflower top
 flower bush bottom
 sunflower bottom
+crops low
+crops mid
+crops high
+crops high alternate colour

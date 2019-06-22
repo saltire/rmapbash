@@ -2,8 +2,23 @@ air,,empty
 allium,,small two colour
 azure_bluet,,small two colour
 bamboo,,rod upright
+beetroots,age=0,crops low
+beetroots,age=1,crops mid
+beetroots,age=2,crops high
+beetroots,age=3,crops high alternate colour
 blue_orchid,,small two colour
 brown_mushroom,,small one colour
+carrots,age=0,crops low
+carrots,age=1,crops low
+carrots,age=2,crops low
+carrots,age=3,crops mid
+carrots,age=4,crops mid
+carrots,age=5,crops mid
+carrots,age=6,crops high
+carrots,age=7,crops high alternate colour
+carved_pumpkin,facing=east,alternate colour middle right
+carved_pumpkin,facing=south,alternate colour middle left
+carved_pumpkin,,solid shadows
 cave_air,,empty
 cornflower,,small two colour
 dandelion,,small two colour
@@ -62,6 +77,14 @@ wall_torch,facing=north,wall torch north
 wall_torch,facing=east,wall torch east
 wall_torch,facing=south,wall torch south
 wall_torch,facing=west,wall torch west
+wheat,age=0,crops low
+wheat,age=1,crops low
+wheat,age=2,crops low
+wheat,age=3,crops low
+wheat,age=4,crops mid
+wheat,age=5,crops mid
+wheat,age=6,crops mid
+wheat,age=7,crops high
 white_carpet,,flat
 white_tulip,,small two colour
 wither_rose,,small two colour
