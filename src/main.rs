@@ -4,13 +4,13 @@ use std::time::Instant;
 use clap::{Arg, App};
 
 mod biometypes;
-mod blockmap;
 mod blocktypes;
 mod color;
 mod data;
 mod image;
 mod isomap;
 mod nbt;
+mod orthomap;
 mod region;
 mod sizes;
 mod types;
@@ -87,13 +87,13 @@ fn main() {
                         if iso {
                             isomap::draw_region_iso_map(worldpath, &r, outpath, &blocktypes)
                         } else {
-                            blockmap::draw_region_block_map(worldpath, &r, outpath, &blocktypes)
+                            orthomap::draw_region_ortho_map(worldpath, &r, outpath, &blocktypes)
                         }
                     },
                     _ => if iso {
                         isomap::draw_world_iso_map(worldpath, outpath, &blocktypes)
                     } else {
-                        blockmap::draw_world_block_map(worldpath, outpath, &blocktypes)
+                        orthomap::draw_world_ortho_map(worldpath, outpath, &blocktypes)
                     },
                 };
 
