@@ -43,10 +43,10 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
                     w: chunk.get_w_block(&bx, &bo3),
                 };
                 let is_edge = Edges {
-                    n: nblocks.n.slight > 0 && nblocks.n.btype != btype,
-                    s: nblocks.s.slight > 0 && nblocks.s.btype != btype,
-                    e: nblocks.e.slight > 0 && nblocks.e.btype != btype,
-                    w: nblocks.w.slight > 0 && nblocks.w.btype != btype,
+                    n: nblocks.n.slight > 0 && !blocktypes[nblocks.n.btype as usize].solid,
+                    s: nblocks.s.slight > 0 && !blocktypes[nblocks.s.btype as usize].solid,
+                    e: nblocks.e.slight > 0 && !blocktypes[nblocks.e.btype as usize].solid,
+                    w: nblocks.w.slight > 0 && !blocktypes[nblocks.w.btype as usize].solid,
                 };
                 let shade = match (is_edge.n || is_edge.w, is_edge.e || is_edge.s) {
                     (true, false) => 2,
