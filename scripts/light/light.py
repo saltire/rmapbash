@@ -6,11 +6,12 @@ from PIL import Image
 
 currentdir = os.path.dirname(__file__)
 
-for mode in ['day', 'night']:
+for mode in ['day', 'night', 'nether', 'end']:
     img = Image.open(os.path.join(currentdir, '{}.png'.format(mode)))
+    print(mode, img)
     pix = img.load()
 
-    with open(os.path.join(currentdir, '../../resources/{}.csv'.format(mode)), 'w') as csvfile:
+    with open(os.path.join(currentdir, '../../resources/light/{}.csv'.format(mode)), 'w') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['sky', 'block', 'r', 'g', 'b'])
 

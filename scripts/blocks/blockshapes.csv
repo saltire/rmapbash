@@ -8,6 +8,7 @@ beetroots,age=2,crops high
 beetroots,age=3,crops high alternate colour
 blue_orchid,,small two colour
 brown_mushroom,,small one colour
+campfire,,fire
 carrots,age=0,crops low
 carrots,age=1,crops low
 carrots,age=2,crops low
@@ -22,6 +23,7 @@ carved_pumpkin,,solid shadows
 cave_air,,empty
 cornflower,,small two colour
 dandelion,,small two colour
+fire,,fire
 grass,,grass
 grass_block,,alternate colour bottom half
 grass_path,,alternate colour sides

@@ -53,39 +53,47 @@ fn main() {
                 Err(err) => eprintln!("Error reading data: {}", err),
             },
             _ => {
+                let worldpath = if mode == "world" { inpath }
+                    else { inpath.parent().unwrap().parent().unwrap() };
+
                 let outdir = Path::new("./results");
                 std::fs::create_dir_all(outdir).unwrap();
-                let outpath = outdir.join(format!("{}.png", mode));
+                let outpathbuf = outdir.join(format!("{}.png", mode));
+                let outpath = outpathbuf.as_path();
 
                 let iso = matches.is_present("i");
-                print!("View:     ");
-                if iso { println!("Isometric") } else { println!("Orthographic") };
-                let night = matches.is_present("n");
-                print!("Lighting: ");
-                if night { println!("Night") } else { println!("Day") };
+
+                let dim = match worldpath.file_stem().unwrap().to_str() {
+                    Some("DIM-1") => "nether",
+                    Some("DIM1") => "end",
+                    _ => "overworld",
+                };
+                let lighting = if dim != "overworld" { dim }
+                    else if matches.is_present("n") { "night" }
+                    else { "day" };
+
+                println!("View:     {}", if iso { "isometric" } else { "orthographic" });
+                println!("Lighting: {}", lighting);
 
                 let start = Instant::now();
 
                 println!("Getting block types");
-                let blocktypes = blocktypes::get_block_types(&night);
+                let blocktypes = blocktypes::get_block_types(lighting);
 
                 let result = match mode {
                     "region" => {
-                        let worldpath = inpath.parent().unwrap().parent().unwrap();
                         let r = region::get_coords_from_path(inpath.to_str().unwrap()).unwrap();
 
                         if iso {
-                            isomap::draw_region_iso_map(
-                                &worldpath, &r, outpath.as_path(), &blocktypes)
+                            isomap::draw_region_iso_map(worldpath, &r, outpath, &blocktypes)
                         } else {
-                            blockmap::draw_region_block_map(
-                                &worldpath, &r, outpath.as_path(), &blocktypes)
+                            blockmap::draw_region_block_map(worldpath, &r, outpath, &blocktypes)
                         }
                     },
                     _ => if iso {
-                        isomap::draw_world_iso_map(inpath, outpath.as_path(), &blocktypes)
+                        isomap::draw_world_iso_map(worldpath, outpath, &blocktypes)
                     } else {
-                        blockmap::draw_world_block_map(inpath, outpath.as_path(), &blocktypes)
+                        blockmap::draw_world_block_map(worldpath, outpath, &blocktypes)
                     },
                 };
 

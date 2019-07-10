@@ -2,6 +2,8 @@ empty,0000000000000000
 solid shadows,1111223322332233
 solid no shadows,1111111111111111
 flat,0000000000001111
+inverted flat,1111000000000000
+flat alternate colour,0000000000001441
 small square shadows,0000000001100230
 small square no shadows,0000000001100110
 grass,0000001010110110
@@ -20,8 +22,9 @@ alternate colour sides,1111556655665566
 alternate colour left side,1111553355335533
 alternate colour right side,1111226622662266
 alternate colour bottom half,1111223355665566
-inverted flat,1111000000000000
-flat with alternate colour,0000000000001441
+alternate colour middle,1111223355662233
+alternate colour middle left,1111223344332233
+alternate colour middle right,1111223322442233
 fence,0000011002300230
 fire,0040401014144111
 ladder facing north,0000110022001100
@@ -53,3 +56,11 @@ wall torch east,0100040000000000
 wall torch south,0010004000000000
 wall torch west,0000001000400000
 reeds,0202010102020101
+flower bush top,0000001010404561
+sunflower top,0000021001100065
+flower bush bottom,0000146446160160
+sunflower bottom,0000054000400060
+crops low,0000000000000210
+crops mid,0000000002102131
+crops high,0000021021310130
+crops high alternate colour,0000021021310460
