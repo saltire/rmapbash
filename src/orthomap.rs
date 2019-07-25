@@ -70,7 +70,8 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType])
+pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
+    limits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -128,7 +129,8 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     Ok(())
 }
 
-pub fn draw_region_ortho_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
+pub fn draw_region_ortho_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path,
+    blocktypes: &[BlockType], limits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
     if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
