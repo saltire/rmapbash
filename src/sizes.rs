@@ -47,3 +47,35 @@ pub const MAX_LIGHT_LEVEL: u8 = LIGHT_LEVELS as u8 - 1;
 pub const BIOME_ARRAY_SIZE: usize = 170;
 
 pub const MAX_CHANNEL_VALUE: u8 = 255;
+
+
+// convert a block or chunk coord to its containing chunk or region coord
+
+fn divide(value: i32, ratio: usize) -> i32 {
+    (value as f64 / ratio as f64).floor() as i32
+}
+// pub fn block_to_chunk(b: i32) -> i32 {
+//     divide(b, BLOCKS_IN_CHUNK)
+// }
+pub fn block_to_region(b: i32) -> i32 {
+    divide(b, BLOCKS_IN_REGION)
+}
+// pub fn chunk_to_region(c: i32) -> i32 {
+//     divide(c, CHUNKS_IN_REGION)
+// }
+
+
+// convert a block or chunk coord to its local coord within a chunk or region
+
+// fn signed_modulo(value: i32, ratio: usize) -> usize {
+//     (value as f64 % ratio as f64 + ratio as f64) as usize % ratio
+// }
+// pub fn block_pos_in_chunk(b: i32) -> usize {
+//     signed_modulo(b, BLOCKS_IN_CHUNK)
+// }
+// pub fn block_pos_in_region(b: i32) -> usize {
+//     signed_modulo(b, BLOCKS_IN_REGION)
+// }
+// pub fn chunk_pos_in_region(c: i32) -> usize {
+//     signed_modulo(c, CHUNKS_IN_REGION)
+// }

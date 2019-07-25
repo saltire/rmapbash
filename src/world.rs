@@ -25,11 +25,11 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
     }
 
     // If block limits were passed, transform them into region limits.
-    let vrlimits = limits.and_then(|blimits| Some(Edges {
-        n: (blimits.n as f64 / BLOCKS_IN_REGION as f64).floor() as i32,
-        e: (blimits.e as f64 / BLOCKS_IN_REGION as f64).floor() as i32,
-        s: (blimits.s as f64 / BLOCKS_IN_REGION as f64).floor() as i32,
-        w: (blimits.w as f64 / BLOCKS_IN_REGION as f64).floor() as i32,
+    let rlimits = limits.and_then(|blimits| Some(Edges {
+        n: block_to_region(blimits.n),
+        e: block_to_region(blimits.e),
+        s: block_to_region(blimits.s),
+        w: block_to_region(blimits.w),
     }));
 
     let mut regions = HashMap::new();
@@ -37,7 +37,7 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
         let entry = dir_entry?;
         if let Some(filename) = entry.file_name().to_str() {
             if let Some(r) = region::get_coords_from_path(filename) {
-                if vrlimits.is_none() || vrlimits.unwrap().contains(&r) {
+                if rlimits.is_none() || rlimits.unwrap().contains(&r) {
                     let chunks = region::read_region_chunk_coords(entry.path().as_path())?;
                     if chunks.len() > 0 {
                         regions.insert(r, chunks);

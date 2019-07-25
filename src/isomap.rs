@@ -145,6 +145,8 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
                         draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
                     }
                 }
+            } else {
+                println!("No data in region.");
             }
         }
     }
