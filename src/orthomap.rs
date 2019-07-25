@@ -18,50 +18,56 @@ fn get_ortho_size(csize: &Pair<usize>) -> Pair<usize> {
     }
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
-    co: &usize, width: &usize) {
+fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &region::Chunk)
+-> color::RGBA {
+    let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
+
+    let bo2 = bz * BLOCKS_IN_CHUNK + bx;
+    let biome = chunk.data.biomes[bo2] as usize;
+
+    for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
+        let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
+        let btype = chunk.data.blocks[bo3];
+        let blocktype = &blocktypes[btype as usize];
+        if blocktype.empty {
+            continue;
+        }
+
+        let tblock = chunk.get_t_block(&by, &bo3);
+        let nblocks = Edges {
+            n: chunk.get_n_block(&bz, &bo3),
+            e: chunk.get_e_block(&bx, &bo3),
+            s: chunk.get_s_block(&bz, &bo3),
+            w: chunk.get_w_block(&bx, &bo3),
+        };
+        let is_edge = Edges {
+            n: nblocks.n.slight > 0 && !blocktypes[nblocks.n.btype as usize].solid,
+            s: nblocks.s.slight > 0 && !blocktypes[nblocks.s.btype as usize].solid,
+            e: nblocks.e.slight > 0 && !blocktypes[nblocks.e.btype as usize].solid,
+            w: nblocks.w.slight > 0 && !blocktypes[nblocks.w.btype as usize].solid,
+        };
+        let shade = match (is_edge.n || is_edge.w, is_edge.e || is_edge.s) {
+            (true, false) => 2,
+            (false, true) => 3,
+            _ => 1,
+        };
+        let blockcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][shade];
+
+        color = color::blend_alpha_color(&color, blockcolor);
+        if color.a == MAX_CHANNEL_VALUE {
+            break;
+        }
+    }
+
+    color
+}
+
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &usize,
+    width: &usize) {
     for bz in 0..BLOCKS_IN_CHUNK {
         for bx in 0..BLOCKS_IN_CHUNK {
-            let bo2 = bz * BLOCKS_IN_CHUNK + bx;
-            let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
-
-            let biome = chunk.data.biomes[bo2] as usize;
-
-            for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
-                let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
-                let btype = chunk.data.blocks[bo3];
-                let blocktype = &blocktypes[btype as usize];
-                if blocktype.empty {
-                    continue;
-                }
-
-                let tblock = chunk.get_t_block(&by, &bo3);
-                let nblocks = Edges {
-                    n: chunk.get_n_block(&bz, &bo3),
-                    e: chunk.get_e_block(&bx, &bo3),
-                    s: chunk.get_s_block(&bz, &bo3),
-                    w: chunk.get_w_block(&bx, &bo3),
-                };
-                let is_edge = Edges {
-                    n: nblocks.n.slight > 0 && !blocktypes[nblocks.n.btype as usize].solid,
-                    s: nblocks.s.slight > 0 && !blocktypes[nblocks.s.btype as usize].solid,
-                    e: nblocks.e.slight > 0 && !blocktypes[nblocks.e.btype as usize].solid,
-                    w: nblocks.w.slight > 0 && !blocktypes[nblocks.w.btype as usize].solid,
-                };
-                let shade = match (is_edge.n || is_edge.w, is_edge.e || is_edge.s) {
-                    (true, false) => 2,
-                    (false, true) => 3,
-                    _ => 1,
-                };
-                let blockcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][shade];
-
-                color = color::blend_alpha_color(&color, blockcolor);
-                if color.a == MAX_CHANNEL_VALUE {
-                    break;
-                }
-            }
-
             let po = (co + bz * width + bx) * 4;
+            let color = get_block_color(bx, bz, blocktypes, chunk);
             pixels[po] = color.r;
             pixels[po + 1] = color.g;
             pixels[po + 2] = color.b;
@@ -75,10 +81,8 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
-    let world = world::get_world(worldpath)?;
-
-    let csize = world.get_chunk_size();
-    let size = get_ortho_size(&csize);
+    let world = world::get_world(worldpath, limits)?;
+    let size = get_ortho_size(&world.csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -109,8 +113,8 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 
                         // println!("Drawing chunk {}, {}", c.x, c.z);
                         let ac = Pair {
-                            x: ar.x * CHUNKS_IN_REGION + c.x - world.margins.w,
-                            z: ar.z * CHUNKS_IN_REGION + c.z - world.margins.n,
+                            x: ar.x * CHUNKS_IN_REGION + c.x - world.cmargins.w,
+                            z: ar.z * CHUNKS_IN_REGION + c.z - world.cmargins.n,
                         };
                         let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
 

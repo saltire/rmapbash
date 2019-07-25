@@ -103,10 +103,9 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
-    let world = world::get_world(worldpath)?;
+    let world = world::get_world(worldpath, limits)?;
 
-    let csize = world.get_chunk_size();
-    let size = get_iso_size(&csize);
+    let size = get_iso_size(&world.csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -137,10 +136,10 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
 
                         // println!("Drawing chunk {}, {}", c.x, c.z);
                         let ac = Pair {
-                            x: ar.x * CHUNKS_IN_REGION + c.x - world.margins.w,
-                            z: ar.z * CHUNKS_IN_REGION + c.z - world.margins.n,
+                            x: ar.x * CHUNKS_IN_REGION + c.x - world.cmargins.w,
+                            z: ar.z * CHUNKS_IN_REGION + c.z - world.cmargins.n,
                         };
-                        let cp = get_iso_chunk_pixel(&ac, &csize);
+                        let cp = get_iso_chunk_pixel(&ac, &world.csize);
                         let co = cp.z * size.x + cp.x;
 
                         draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
