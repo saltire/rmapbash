@@ -88,8 +88,8 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     let mut i = 0;
     let len = world.regions.len();
 
-    for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
-        for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
+    for rz in (world.redges.n..world.redges.s + 1).rev() {
+        for rx in (world.redges.w..world.redges.e + 1).rev() {
             let r = &Pair { x: rx, z: rz };
             if !world.regions.contains_key(&r) {
                 continue;
@@ -100,8 +100,8 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
             if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
                 println!("Drawing block map for region {}, {}", r.x, r.z);
                 let ar = Pair {
-                    x: (r.x - world.rlimits.w) as usize,
-                    z: (r.z - world.rlimits.n) as usize,
+                    x: (r.x - world.redges.w) as usize,
+                    z: (r.z - world.redges.n) as usize,
                 };
 
                 for cz in (0..CHUNKS_IN_REGION).rev() {

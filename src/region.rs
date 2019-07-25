@@ -128,11 +128,15 @@ impl<'a> Chunk<'a> {
 }
 
 pub struct Region {
+    pub chunklist: Vec<Pair<usize>>,
+}
+
+pub struct RegionData {
     pub chunks: HashMap<Pair<usize>, ChunkData>,
     pub nchunks: Edges<HashMap<Pair<usize>, ChunkData>>,
 }
 
-impl Region {
+impl RegionData {
     pub fn get_chunk(&self, c: &Pair<usize>) -> Chunk {
         Chunk {
             data: &self.chunks[c],
@@ -326,7 +330,7 @@ fn read_region_chunk_data(path: &Path, margins: &Edges<usize>, blocktypes: &[Blo
 }
 
 pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType])
--> Result<Option<Region>, Box<Error>> {
+-> Result<Option<RegionData>, Box<Error>> {
     let regionpath = get_path_from_coords(worldpath, &r);
     if !regionpath.exists() {
         return Ok(None);
@@ -345,7 +349,7 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType
         e: Edges { n: 0, s: 0, w: 0, e: MAX_CHUNK_IN_REGION },
     };
 
-    Ok(Some(Region {
+    Ok(Some(RegionData {
         chunks: read_region_chunk_data(&regionpath, &Edges::default(), blocktypes)?,
         nchunks: Edges {
             n: read_region_chunk_data(&npaths.n, &nmargins.n, blocktypes)?,
