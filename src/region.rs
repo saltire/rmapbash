@@ -127,10 +127,6 @@ impl<'a> Chunk<'a> {
     }
 }
 
-pub struct Region {
-    pub chunklist: Vec<Pair<usize>>,
-}
-
 pub struct RegionData {
     pub chunks: HashMap<Pair<usize>, ChunkData>,
     pub nchunks: Edges<HashMap<Pair<usize>, ChunkData>>,

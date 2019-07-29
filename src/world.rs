@@ -1,3 +1,4 @@
+use std::cmp::{min, max};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::path::Path;
@@ -6,15 +7,19 @@ use super::region;
 use super::sizes::*;
 use super::types::*;
 
+pub struct Region {
+    pub cedges: Edges<usize>,
+}
+
 pub struct World {
-    pub regions: HashMap<Pair<i32>, region::Region>,
+    pub regions: HashMap<Pair<i32>, Region>,
     pub redges: Edges<i32>,
-    pub cmargins: Edges<usize>,
+    pub cedges: Edges<i32>,
     pub csize: Pair<usize>,
 }
 
 pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
--> Result<HashMap<Pair<i32>, region::Region>, Error> {
+-> Result<HashMap<Pair<i32>, Region>, Error> {
     if !path.is_dir() {
         return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
     }
@@ -48,7 +53,14 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
                     let chunklist = region::read_region_chunk_coords(
                         entry.path().as_path(), &rclimits)?;
                     if chunklist.len() > 0 {
-                        regions.insert(r, region::Region { chunklist });
+                        regions.insert(r, Region {
+                            cedges: Edges {
+                                n: chunklist.iter().map(|c| c.z).min().unwrap(),
+                                e: chunklist.iter().map(|c| c.x).max().unwrap(),
+                                s: chunklist.iter().map(|c| c.z).max().unwrap(),
+                                w: chunklist.iter().map(|c| c.x).min().unwrap(),
+                            },
+                        });
                     }
                 }
             }
@@ -70,38 +82,34 @@ pub fn get_world(worldpath: &Path, limits: &Option<Edges<i32>>) -> Result<World,
         w: regions.keys().map(|r| r.x).min().unwrap(),
     };
 
-    let mut cmargins = Edges {
-        n: CHUNKS_IN_REGION,
-        e: CHUNKS_IN_REGION,
-        s: CHUNKS_IN_REGION,
-        w: CHUNKS_IN_REGION,
+    let mut cedges = Edges {
+        n: i32::max_value(),
+        e: i32::min_value(),
+        s: i32::min_value(),
+        w: i32::max_value(),
     };
     for (r, region) in regions.iter() {
         if r.z == redges.n {
-            let min_cz = region.chunklist.iter().map(|c| c.z).min().unwrap();
-            cmargins.n = std::cmp::min(cmargins.n, min_cz);
+            cedges.n = min(cedges.n, r.z * CHUNKS_IN_REGION as i32 + region.cedges.n as i32);
         }
         if r.x == redges.e {
-            let max_cx = region.chunklist.iter().map(|c| c.x).max().unwrap();
-            cmargins.e = std::cmp::min(cmargins.e, CHUNKS_IN_REGION - max_cx - 1);
+            cedges.e = max(cedges.e, r.x * CHUNKS_IN_REGION as i32 + region.cedges.e as i32);
         }
         if r.z == redges.s {
-            let max_cz = region.chunklist.iter().map(|c| c.z).max().unwrap();
-            cmargins.s = std::cmp::min(cmargins.s, CHUNKS_IN_REGION - max_cz - 1);
+            cedges.s = max(cedges.s, r.z * CHUNKS_IN_REGION as i32 + region.cedges.s as i32);
         }
         if r.x == redges.w {
-            let min_cx = region.chunklist.iter().map(|c| c.x).min().unwrap();
-            cmargins.w = std::cmp::min(cmargins.w, min_cx);
+            cedges.w = min(cedges.w, r.x * CHUNKS_IN_REGION as i32 + region.cedges.w as i32);
         }
     }
 
     Ok(World {
         regions,
         redges,
-        cmargins,
+        cedges,
         csize: Pair {
-            x: (redges.e - redges.w + 1) as usize * CHUNKS_IN_REGION - cmargins.e - cmargins.w,
-            z: (redges.s - redges.n + 1) as usize * CHUNKS_IN_REGION - cmargins.n - cmargins.s,
+            x: (cedges.e - cedges.w + 1) as usize,
+            z: (cedges.s - cedges.n + 1) as usize,
         },
     })
 }
