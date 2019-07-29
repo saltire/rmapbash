@@ -311,15 +311,15 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
     Ok(Some(chunk))
 }
 
-fn read_region_chunk_data(path: &Path, cmargins: &Edges<usize>, blocktypes: &[BlockType])
+fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[BlockType])
 -> Result<HashMap<Pair<usize>, ChunkData>, Box<Error>> {
     let mut chunks = HashMap::new();
 
     if path.exists() {
         let mut file = File::open(path)?;
 
-        for cz in cmargins.n..(CHUNKS_IN_REGION - cmargins.s) {
-            for cx in cmargins.w..(CHUNKS_IN_REGION - cmargins.e) {
+        for cz in rclimits.n..(rclimits.s + 1) {
+            for cx in rclimits.w..(rclimits.e + 1) {
                 if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
                     if let Some(chunk) = read_region_chunk(&mut reader, blocktypes)? {
                         chunks.insert(Pair { x: cx, z: cz }, chunk);
@@ -340,16 +340,17 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType
         return Ok(None);
     }
 
-    let cmargins = if let Some(blimits) = limits {
-        Edges {
+    let rclimits = match limits {
+        Some(blimits) => Edges {
             n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
-            e: MAX_CHUNK_IN_REGION - chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
-            s: MAX_CHUNK_IN_REGION - chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
+            e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
+            s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
             w: chunk_pos_in_region(block_to_chunk(blimits.w), Some(r.x)),
-        }
-    } else { Edges::default() };
+        },
+        None => Edges::<usize>::full(CHUNKS_IN_REGION),
+    };
 
-    let chunks = read_region_chunk_data(&regionpath, &cmargins, blocktypes)?;
+    let chunks = read_region_chunk_data(&regionpath, &rclimits, blocktypes)?;
     if chunks.len() == 0 {
         return Ok(None);
     }
@@ -360,20 +361,20 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType
         s: get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
         w: get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
     };
-    let nmargins = Edges {
-        n: Edges { n: MAX_CHUNK_IN_REGION, s: 0, w: 0, e: 0 },
-        e: Edges { n: 0, e: MAX_CHUNK_IN_REGION, s: 0, w: 0 },
-        s: Edges { n: 0, e: 0, s: MAX_CHUNK_IN_REGION, w: 0 },
-        w: Edges { n: 0, e: 0, s: 0, w: MAX_CHUNK_IN_REGION },
+    let nrclimits = Edges {
+        n: Edges { n: MAX_CHUNK_IN_REGION, e: rclimits.e, s: MAX_CHUNK_IN_REGION, w: rclimits.w },
+        e: Edges { n: rclimits.n, e: 0, s: rclimits.s, w: 0 },
+        s: Edges { n: 0, e: rclimits.e, s: 0, w: rclimits.w },
+        w: Edges { n: rclimits.n, e: MAX_CHUNK_IN_REGION, s: rclimits.s, w: MAX_CHUNK_IN_REGION },
     };
 
     Ok(Some(RegionData {
         chunks,
         nchunks: Edges {
-            n: read_region_chunk_data(&npaths.n, &nmargins.n, blocktypes)?,
-            e: read_region_chunk_data(&npaths.e, &nmargins.e, blocktypes)?,
-            s: read_region_chunk_data(&npaths.s, &nmargins.s, blocktypes)?,
-            w: read_region_chunk_data(&npaths.w, &nmargins.w, blocktypes)?,
+            n: read_region_chunk_data(&npaths.n, &nrclimits.n, blocktypes)?,
+            e: read_region_chunk_data(&npaths.e, &nrclimits.e, blocktypes)?,
+            s: read_region_chunk_data(&npaths.s, &nrclimits.s, blocktypes)?,
+            w: read_region_chunk_data(&npaths.w, &nrclimits.w, blocktypes)?,
         },
     }))
 }
