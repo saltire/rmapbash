@@ -120,7 +120,7 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
+            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, limits)? {
                 println!("Drawing block map for region {}, {}", r.x, r.z);
                 let ar = Pair {
                     x: (r.x - world.redges.w) as usize,
@@ -161,7 +161,7 @@ pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path,
     blocktypes: &[BlockType], limits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
-    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
+    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, limits)? {
         if reg.chunks.keys().len() > 0 {
             println!("Drawing block map");
 

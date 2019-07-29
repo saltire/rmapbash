@@ -4,7 +4,7 @@ use std::path::Path;
 
 use super::region;
 use super::sizes::*;
-use super::types::{Edges, Pair};
+use super::types::*;
 
 pub struct World {
     pub regions: HashMap<Pair<i32>, region::Region>,
@@ -38,7 +38,15 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
         if let Some(filename) = entry.file_name().to_str() {
             if let Some(r) = region::get_coords_from_path(filename) {
                 if rlimits.is_none() || rlimits.unwrap().contains(&r) {
-                    let chunklist = region::read_region_chunk_coords(entry.path().as_path())?;
+                    // If block limits were passed, find the chunk limits within the region.
+                    let rclimits = limits.and_then(|blimits| Some(Edges {
+                        n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
+                        e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
+                        s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
+                        w: chunk_pos_in_region(block_to_chunk(blimits.w), Some(r.x)),
+                    }));
+                    let chunklist = region::read_region_chunk_coords(
+                        entry.path().as_path(), &rclimits)?;
                     if chunklist.len() > 0 {
                         regions.insert(r, region::Region { chunklist });
                     }
