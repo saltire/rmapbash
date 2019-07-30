@@ -76,7 +76,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
+pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
     blimits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
@@ -110,18 +110,16 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
                 for cz in (0..CHUNKS_IN_REGION).rev() {
                     for cx in (0..CHUNKS_IN_REGION).rev() {
                         let c = &Pair { x: cx, z: cz };
-                        if !reg.chunks.contains_key(c) {
-                            continue;
+                        if let Some(chunk) = reg.get_chunk(c) {
+                            // println!("Drawing chunk {}, {}", c.x, c.z);
+                            let ac = Pair {
+                                x: (arc.x + c.x as i32) as usize,
+                                z: (arc.z + c.z as i32) as usize,
+                            };
+                            let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
+
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x);
                         }
-
-                        // println!("Drawing chunk {}, {}", c.x, c.z);
-                        let ac = Pair {
-                            x: (arc.x + c.x as i32) as usize,
-                            z: (arc.z + c.z as i32) as usize,
-                        };
-                        let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
-
-                        draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
                     }
                 }
             } else {
@@ -133,57 +131,5 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
     let file = File::create(outpath)?;
     image::draw_block_map(&pixels, size, file, true)?;
 
-    Ok(())
-}
-
-pub fn draw_region_ortho_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path,
-    blocktypes: &[BlockType], blimits: &Option<Edges<i32>>)
--> Result<(), Box<Error>> {
-    println!("Reading block data for region {}, {}", r.x, r.z);
-    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
-        let chunk_count = reg.chunks.len();
-        if chunk_count > 0 {
-            println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
-                chunk_count, if chunk_count == 1 { "" } else { "s" });
-
-            let rcedges = Edges {
-                n: reg.chunks.keys().map(|c| c.z).min().unwrap(),
-                e: reg.chunks.keys().map(|c| c.x).max().unwrap(),
-                s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
-                w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
-            };
-            let csize = Pair {
-                x: rcedges.e - rcedges.w + 1,
-                z: rcedges.s - rcedges.n + 1,
-            };
-            let size = get_ortho_size(&csize);
-            let mut pixels = vec![0u8; size.x * size.z * 4];
-
-            for cz in (0..CHUNKS_IN_REGION).rev() {
-                for cx in (0..CHUNKS_IN_REGION).rev() {
-                    let c = &Pair { x: cx, z: cz };
-                    if !reg.chunks.contains_key(c) {
-                        continue;
-                    }
-
-                    // println!("Drawing chunk {}, {}", c.x, c.z);
-                    let ac = Pair {
-                        x: c.x - rcedges.w,
-                        z: c.z - rcedges.n,
-                    };
-                    let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
-
-                    draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
-                }
-            }
-
-            let file = File::create(outpath)?;
-            image::draw_block_map(&pixels, size, file, true)?;
-
-            return Ok(());
-        }
-    }
-
-    println!("No data in region.");
     Ok(())
 }

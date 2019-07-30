@@ -72,6 +72,9 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<i32>>)
 
 pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World, Error> {
     let regions = read_world_regions(worldpath, blimits)?;
+    if regions.len() == 0 {
+        return Err(Error::new(ErrorKind::NotFound, "No data in world."));
+    }
 
     println!("Reading chunk boundaries");
 

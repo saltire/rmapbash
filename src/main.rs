@@ -26,11 +26,6 @@ fn main() {
             .help("Path to either a save directory, a region file (.mca), or a data file (.dat)")
             .required(true)
             .index(1))
-        // .arg(Arg::with_name("r")
-        //     .short("r")
-        //     .long("region")
-        //     .value_names(&["RX", "RZ"])
-        //     .help("Region coordinates"))
         .arg(Arg::with_name("i")
             .short("i")
             .long("isometric")
@@ -54,7 +49,6 @@ fn main() {
 
         let mode = match inpath.extension() {
             Some(ext) if ext == "dat" => "data",
-            Some(ext) if ext == "mca" => "region",
             _ => "world",
         };
 
@@ -64,9 +58,6 @@ fn main() {
                 Err(err) => eprintln!("Error reading data: {}", err),
             },
             _ => {
-                let worldpath = if mode == "world" { inpath }
-                    else { inpath.parent().unwrap().parent().unwrap() };
-
                 let outdir = Path::new("./results");
                 std::fs::create_dir_all(outdir).unwrap();
                 let outpathbuf = outdir.join(format!("{}.png", mode));
@@ -74,7 +65,7 @@ fn main() {
 
                 let iso = matches.is_present("i");
 
-                let dim = match worldpath.file_stem().unwrap().to_str() {
+                let dim = match inpath.file_stem().unwrap().to_str() {
                     Some("DIM-1") => "nether",
                     Some("DIM1") => "end",
                     _ => "overworld",
@@ -109,21 +100,10 @@ fn main() {
                 println!("Getting block types");
                 let blocktypes = blocktypes::get_block_types(lighting);
 
-                let result = match mode {
-                    "region" => {
-                        let r = region::get_coords_from_path(inpath.to_str().unwrap()).unwrap();
-
-                        if iso {
-                            isomap::draw_region_iso_map(worldpath, &r, outpath, &blocktypes, &blimits)
-                        } else {
-                            orthomap::draw_region_ortho_map(worldpath, &r, outpath, &blocktypes, &blimits)
-                        }
-                    },
-                    _ => if iso {
-                        isomap::draw_world_iso_map(worldpath, outpath, &blocktypes, &blimits)
-                    } else {
-                        orthomap::draw_world_ortho_map(worldpath, outpath, &blocktypes, &blimits)
-                    },
+                let result = if iso {
+                    isomap::draw_iso_map(inpath, outpath, &blocktypes, &blimits)
+                } else {
+                    orthomap::draw_ortho_map(inpath, outpath, &blocktypes, &blimits)
                 };
 
                 let elapsed = start.elapsed();

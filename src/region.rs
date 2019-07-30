@@ -133,9 +133,9 @@ pub struct RegionData {
 }
 
 impl RegionData {
-    pub fn get_chunk(&self, c: &Pair<usize>) -> Chunk {
-        Chunk {
-            data: &self.chunks[c],
+    pub fn get_chunk(&self, c: &Pair<usize>) -> Option<Chunk> {
+        self.chunks.get(c).and_then(|data| Some(Chunk {
+            data,
             ndata: Edges {
                 n: match c.z {
                     0 => self.nchunks.n.get(&Pair { x: c.x, z: MAX_CHUNK_IN_REGION }),
@@ -154,7 +154,7 @@ impl RegionData {
                     _ => self.chunks.get(&Pair { x: c.x - 1, z: c.z }),
                 }.unwrap_or_else(|| &EMPTY_CHUNK),
             }
-        }
+        }))
     }
 }
 
