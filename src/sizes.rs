@@ -70,9 +70,17 @@ pub fn chunk_to_region(c: i32) -> i32 {
 fn signed_modulo(value: i32, ratio: usize) -> usize {
     (value as f64 % ratio as f64 + ratio as f64) as usize % ratio
 }
-// pub fn block_pos_in_chunk(b: i32) -> usize {
-//     signed_modulo(b, BLOCKS_IN_CHUNK)
-// }
+pub fn block_pos_in_chunk(b: i32, c: Option<i32>) -> usize {
+    match c {
+        Some(c) => match block_to_chunk(b) {
+            // If the block doesn't fall within the given chunk, clamp to the edge of the chunk.
+            bc if bc < c => 0,
+            bc if bc > c => MAX_BLOCK_IN_CHUNK,
+            _ => signed_modulo(b, BLOCKS_IN_CHUNK),
+        },
+        None => signed_modulo(b, BLOCKS_IN_CHUNK),
+    }
+}
 // pub fn block_pos_in_region(b: i32) -> usize {
 //     signed_modulo(b, BLOCKS_IN_REGION)
 // }

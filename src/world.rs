@@ -15,6 +15,7 @@ pub struct World {
     pub regions: HashMap<Pair<i32>, Region>,
     pub redges: Edges<i32>,
     pub cedges: Edges<i32>,
+    pub bedges: Edges<i32>,
     pub csize: Pair<usize>,
 }
 
@@ -106,10 +107,26 @@ pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World
         }
     }
 
+    let cbedges = Edges {
+        n: cedges.n * BLOCKS_IN_CHUNK as i32,
+        e: cedges.e * BLOCKS_IN_CHUNK as i32 + MAX_BLOCK_IN_CHUNK as i32,
+        s: cedges.s * BLOCKS_IN_CHUNK as i32 + MAX_BLOCK_IN_CHUNK as i32,
+        w: cedges.w * BLOCKS_IN_CHUNK as i32,
+    };
+
     Ok(World {
         regions,
         redges,
         cedges,
+        bedges: match blimits {
+            Some(blimits) => Edges {
+                n: max(cbedges.n, blimits.n),
+                e: min(cbedges.e, blimits.e),
+                s: min(cbedges.s, blimits.s),
+                w: max(cbedges.w, blimits.w),
+            },
+            None => cbedges,
+        },
         csize: Pair {
             x: (cedges.e - cedges.w + 1) as usize,
             z: (cedges.s - cedges.n + 1) as usize,

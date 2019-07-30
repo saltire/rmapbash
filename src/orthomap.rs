@@ -11,13 +11,6 @@ use super::types::*;
 use super::world;
 
 
-fn get_ortho_size(csize: &Pair<usize>) -> Pair<usize> {
-    Pair {
-        x: csize.x * BLOCKS_IN_CHUNK,
-        z: csize.z * BLOCKS_IN_CHUNK,
-    }
-}
-
 fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &region::Chunk)
 -> color::RGBA {
     let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
@@ -62,11 +55,11 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
     color
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &usize,
-    width: &usize) {
-    for bz in 0..BLOCKS_IN_CHUNK {
-        for bx in 0..BLOCKS_IN_CHUNK {
-            let po = (co + bz * width + bx) * 4;
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &i32,
+    cblimits: &Edges<usize>, width: &usize) {
+    for bz in cblimits.n..(cblimits.s + 1) {
+        for bx in cblimits.w..(cblimits.e + 1) {
+            let po = (co + (bz * width + bx) as i32) as usize * 4;
             let color = get_block_color(bx, bz, blocktypes, chunk);
             pixels[po] = color.r;
             pixels[po + 1] = color.g;
@@ -82,7 +75,18 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
     println!("Creating block map from world dir {}", worldpath.display());
 
     let world = world::get_world(worldpath, blimits)?;
-    let size = get_ortho_size(&world.csize);
+    let size = Pair {
+        x: (world.bedges.e - world.bedges.w + 1) as usize,
+        z: (world.bedges.s - world.bedges.n + 1) as usize,
+    };
+    let cbcrop = match blimits {
+        Some(blimits) => Pair {
+            x: block_pos_in_chunk(blimits.w, None),
+            z: block_pos_in_chunk(blimits.n, None),
+        },
+        None => Pair { x: 0, z: 0 },
+    };
+    let crop = cbcrop.z * size.x + cbcrop.x;
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -112,13 +116,28 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
                         let c = &Pair { x: cx, z: cz };
                         if let Some(chunk) = reg.get_chunk(c) {
                             // println!("Drawing chunk {}, {}", c.x, c.z);
+                            let wc = Pair {
+                                x: r.x * CHUNKS_IN_REGION as i32 + c.x as i32,
+                                z: r.z * CHUNKS_IN_REGION as i32 + c.z as i32,
+                            };
+                            let cblimits = match blimits {
+                                Some(blimits) => Edges {
+                                    n: block_pos_in_chunk(blimits.n, Some(wc.z)),
+                                    e: block_pos_in_chunk(blimits.e, Some(wc.x)),
+                                    s: block_pos_in_chunk(blimits.s, Some(wc.z)),
+                                    w: block_pos_in_chunk(blimits.w, Some(wc.x)),
+                                },
+                                None => Edges::<usize>::full(BLOCKS_IN_CHUNK),
+                            };
+
                             let ac = Pair {
                                 x: (arc.x + c.x as i32) as usize,
                                 z: (arc.z + c.z as i32) as usize,
                             };
-                            let co = (ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK;
+                            let co = ((ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK) as i32 -
+                                crop as i32;
 
-                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x);
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
                         }
                     }
                 }
