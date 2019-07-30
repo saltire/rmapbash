@@ -18,7 +18,7 @@ pub struct World {
     pub csize: Pair<usize>,
 }
 
-pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
+pub fn read_world_regions(path: &Path, blimits: &Option<Edges<i32>>)
 -> Result<HashMap<Pair<i32>, Region>, Error> {
     if !path.is_dir() {
         return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
@@ -30,7 +30,7 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
     }
 
     // If block limits were passed, transform them into region limits.
-    let rlimits = limits.and_then(|blimits| Some(Edges {
+    let rlimits = blimits.and_then(|blimits| Some(Edges {
         n: block_to_region(blimits.n),
         e: block_to_region(blimits.e),
         s: block_to_region(blimits.s),
@@ -44,7 +44,7 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
             if let Some(r) = region::get_coords_from_path(filename) {
                 if rlimits.is_none() || rlimits.unwrap().contains(&r) {
                     // If block limits were passed, find the chunk limits within the region.
-                    let rclimits = limits.and_then(|blimits| Some(Edges {
+                    let rclimits = blimits.and_then(|blimits| Some(Edges {
                         n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
                         e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
                         s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
@@ -70,8 +70,8 @@ pub fn read_world_regions(path: &Path, limits: &Option<Edges<i32>>)
     Ok(regions)
 }
 
-pub fn get_world(worldpath: &Path, limits: &Option<Edges<i32>>) -> Result<World, Error> {
-    let regions = read_world_regions(worldpath, limits)?;
+pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World, Error> {
+    let regions = read_world_regions(worldpath, blimits)?;
 
     println!("Reading chunk boundaries");
 

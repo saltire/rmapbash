@@ -329,14 +329,14 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
 }
 
 pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType],
-    limits: &Option<Edges<i32>>)
+    blimits: &Option<Edges<i32>>)
 -> Result<Option<RegionData>, Box<Error>> {
     let regionpath = get_path_from_coords(worldpath, &r);
     if !regionpath.exists() {
         return Ok(None);
     }
 
-    let rclimits = match limits {
+    let rclimits = match blimits {
         Some(blimits) => Edges {
             n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
             e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),

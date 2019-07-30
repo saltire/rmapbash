@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Edges<T> {
     pub n: T,
     pub e: T,

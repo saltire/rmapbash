@@ -83,7 +83,7 @@ fn main() {
                     else if matches.is_present("n") { "night" }
                     else { "day" };
 
-                let limits = matches.values_of("b").and_then(|mut b| {
+                let blimits = matches.values_of("b").and_then(|mut b| {
                     let x1 = b.next().unwrap().parse::<i32>().unwrap();
                     let z1 = b.next().unwrap().parse::<i32>().unwrap();
                     let x2 = b.next().unwrap().parse::<i32>().unwrap();
@@ -98,7 +98,7 @@ fn main() {
 
                 println!("View:     {}", if iso { "isometric" } else { "orthographic" });
                 println!("Lighting: {}", lighting);
-                println!("Limits:   {}", if let Some(lim) = &limits {
+                println!("Limits:   {}", if let Some(lim) = &blimits {
                     format!("({}, {}) - ({}, {})", lim.w, lim.n, lim.e, lim.s)
                 } else {
                     "none".to_string()
@@ -114,15 +114,15 @@ fn main() {
                         let r = region::get_coords_from_path(inpath.to_str().unwrap()).unwrap();
 
                         if iso {
-                            isomap::draw_region_iso_map(worldpath, &r, outpath, &blocktypes, &limits)
+                            isomap::draw_region_iso_map(worldpath, &r, outpath, &blocktypes, &blimits)
                         } else {
-                            orthomap::draw_region_ortho_map(worldpath, &r, outpath, &blocktypes, &limits)
+                            orthomap::draw_region_ortho_map(worldpath, &r, outpath, &blocktypes, &blimits)
                         }
                     },
                     _ => if iso {
-                        isomap::draw_world_iso_map(worldpath, outpath, &blocktypes, &limits)
+                        isomap::draw_world_iso_map(worldpath, outpath, &blocktypes, &blimits)
                     } else {
-                        orthomap::draw_world_ortho_map(worldpath, outpath, &blocktypes, &limits)
+                        orthomap::draw_world_ortho_map(worldpath, outpath, &blocktypes, &blimits)
                     },
                 };
 

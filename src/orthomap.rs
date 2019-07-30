@@ -77,11 +77,11 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 }
 
 pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
-    limits: &Option<Edges<i32>>)
+    blimits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
-    let world = world::get_world(worldpath, limits)?;
+    let world = world::get_world(worldpath, blimits)?;
     let size = get_ortho_size(&world.csize);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
@@ -97,7 +97,7 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, limits)? {
+            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
                 let chunk_count = reg.chunks.len();
                 println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
@@ -137,10 +137,10 @@ pub fn draw_world_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[Bloc
 }
 
 pub fn draw_region_ortho_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path,
-    blocktypes: &[BlockType], limits: &Option<Edges<i32>>)
+    blocktypes: &[BlockType], blimits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Reading block data for region {}, {}", r.x, r.z);
-    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, limits)? {
+    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
         let chunk_count = reg.chunks.len();
         if chunk_count > 0 {
             println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
