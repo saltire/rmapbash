@@ -11,24 +11,10 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
-fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
-    Pair {
-        x: (csize.x + csize.z) * ISO_CHUNK_X_MARGIN,
-        z: (csize.x + csize.z) * ISO_CHUNK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
-    }
-}
-
-fn get_iso_chunk_pixel(ac: &Pair<usize>, csize: &Pair<usize>) -> Pair<usize> {
-    Pair {
-        x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
-        z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
-    }
-}
-
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
-    co: &usize, width: &usize) {
-    for bz in (0..BLOCKS_IN_CHUNK).rev() {
-        for bx in (0..BLOCKS_IN_CHUNK).rev() {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &i32,
+    cblimits: &Edges<usize>, width: &usize) {
+    for bz in (cblimits.n..(cblimits.s + 1)).rev() {
+        for bx in (cblimits.w..(cblimits.e + 1)).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
 
             let bpx = (ISO_CHUNK_X_MARGIN as i16 +
@@ -76,7 +62,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
                 for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
-                        let po = (co + (bpy + y) * width + bpx + x) * 4;
+                        let po = (co + ((bpy + y) * width + bpx + x) as i32) as usize * 4;
                         if pixels[po + 3] == MAX_CHANNEL_VALUE {
                             continue;
                         }
@@ -105,7 +91,23 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
 
     let world = world::get_world(worldpath, blimits)?;
 
-    let size = get_iso_size(&world.csize);
+    let bsize = Pair {
+        x: (world.bedges.e - world.bedges.w + 1) as usize,
+        z: (world.bedges.s - world.bedges.n + 1) as usize,
+    };
+    let size = Pair {
+        x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
+        z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
+    };
+    let cbcrop = match blimits {
+        Some(blimits) => Pair {
+            x: block_pos_in_chunk(blimits.w, None),
+            z: block_pos_in_chunk(blimits.n, None),
+        },
+        None => Pair { x: 0, z: 0 },
+    };
+    let crop = (cbcrop.x + cbcrop.z) * ISO_BLOCK_Y_MARGIN * size.x +
+        (cbcrop.x + cbcrop.z) * ISO_BLOCK_X_MARGIN;
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -135,14 +137,31 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                         let c = &Pair { x: cx, z: cz };
                         if let Some(chunk) = reg.get_chunk(c) {
                             // println!("Drawing chunk {}, {}", c.x, c.z);
+                            let wc = Pair {
+                                x: r.x * CHUNKS_IN_REGION as i32 + c.x as i32,
+                                z: r.z * CHUNKS_IN_REGION as i32 + c.z as i32,
+                            };
+                            let cblimits = match blimits {
+                                Some(blimits) => Edges {
+                                    n: block_pos_in_chunk(blimits.n, Some(wc.z)),
+                                    e: block_pos_in_chunk(blimits.e, Some(wc.x)),
+                                    s: block_pos_in_chunk(blimits.s, Some(wc.z)),
+                                    w: block_pos_in_chunk(blimits.w, Some(wc.x)),
+                                },
+                                None => Edges::<usize>::full(BLOCKS_IN_CHUNK),
+                            };
+
                             let ac = Pair {
                                 x: (arc.x + c.x as i32) as usize,
                                 z: (arc.z + c.z as i32) as usize,
                             };
-                            let cp = get_iso_chunk_pixel(&ac, &world.csize);
-                            let co = cp.z * size.x + cp.x;
+                            let cp = Pair {
+                                x: (ac.x + world.csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
+                                z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
+                            };
+                            let co = (cp.z * size.x + cp.x) as i32 - crop as i32;
 
-                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x);
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
                         }
                     }
                 }

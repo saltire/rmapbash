@@ -11,6 +11,13 @@ impl <T> Edges<T> {
         point.x >= self.w && point.x <= self.e && point.z >= self.n && point.z <= self.s
     }
 
+    pub fn size(&self) -> Pair<usize> where T: std::ops::Sub + std::ops::Add {
+        Pair {
+            x: (self.e - self.w + 1) as usize,
+            z: (self.s - self.n + 1) as usize,
+        }
+    }
+
     pub fn full(size: usize) -> Edges<usize> {
         Edges {
             n: 0,
