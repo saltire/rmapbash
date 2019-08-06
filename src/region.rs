@@ -158,16 +158,16 @@ impl RegionData {
     }
 }
 
-fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<i32>) -> PathBuf {
+fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<isize>) -> PathBuf {
     worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z))
 }
 
-pub fn get_coords_from_path(path_str: &str) -> Option<Pair<i32>> {
+pub fn get_coords_from_path(path_str: &str) -> Option<Pair<isize>> {
     Regex::new(r"r\.([-\d]+)\.([-\d]+)\.mca$").unwrap()
         .captures(path_str)
         .map(|caps| Pair {
-            x: caps.get(1).unwrap().as_str().parse::<i32>().unwrap(),
-            z: caps.get(2).unwrap().as_str().parse::<i32>().unwrap(),
+            x: caps.get(1).unwrap().as_str().parse::<isize>().unwrap(),
+            z: caps.get(2).unwrap().as_str().parse::<isize>().unwrap(),
         })
 }
 
@@ -328,8 +328,8 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
     Ok(chunks)
 }
 
-pub fn read_region_data(worldpath: &Path, r: &Pair<i32>, blocktypes: &[BlockType],
-    blimits: &Option<Edges<i32>>)
+pub fn read_region_data(worldpath: &Path, r: &Pair<isize>, blocktypes: &[BlockType],
+    blimits: &Option<Edges<isize>>)
 -> Result<Option<RegionData>, Box<Error>> {
     let regionpath = get_path_from_coords(worldpath, &r);
     if !regionpath.exists() {

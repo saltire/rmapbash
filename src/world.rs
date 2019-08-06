@@ -12,14 +12,14 @@ pub struct Region {
 }
 
 pub struct World {
-    pub regions: HashMap<Pair<i32>, Region>,
-    pub redges: Edges<i32>,
-    pub cedges: Edges<i32>,
-    pub bedges: Edges<i32>,
+    pub regions: HashMap<Pair<isize>, Region>,
+    pub redges: Edges<isize>,
+    pub cedges: Edges<isize>,
+    pub bedges: Edges<isize>,
 }
 
-pub fn read_world_regions(path: &Path, blimits: &Option<Edges<i32>>)
--> Result<HashMap<Pair<i32>, Region>, Error> {
+pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
+-> Result<HashMap<Pair<isize>, Region>, Error> {
     if !path.is_dir() {
         return Err(Error::new(ErrorKind::NotFound, "Directory not found."));
     }
@@ -70,7 +70,7 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<i32>>)
     Ok(regions)
 }
 
-pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World, Error> {
+pub fn get_world(worldpath: &Path, blimits: &Option<Edges<isize>>) -> Result<World, Error> {
     let regions = read_world_regions(worldpath, blimits)?;
     if regions.len() == 0 {
         return Err(Error::new(ErrorKind::NotFound, "No data in world."));
@@ -86,31 +86,31 @@ pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World
     };
 
     let mut cedges = Edges {
-        n: i32::max_value(),
-        e: i32::min_value(),
-        s: i32::min_value(),
-        w: i32::max_value(),
+        n: isize::max_value(),
+        e: isize::min_value(),
+        s: isize::min_value(),
+        w: isize::max_value(),
     };
     for (r, region) in regions.iter() {
         if r.z == redges.n {
-            cedges.n = min(cedges.n, r.z * CHUNKS_IN_REGION as i32 + region.cedges.n as i32);
+            cedges.n = min(cedges.n, r.z * CHUNKS_IN_REGION as isize + region.cedges.n as isize);
         }
         if r.x == redges.e {
-            cedges.e = max(cedges.e, r.x * CHUNKS_IN_REGION as i32 + region.cedges.e as i32);
+            cedges.e = max(cedges.e, r.x * CHUNKS_IN_REGION as isize + region.cedges.e as isize);
         }
         if r.z == redges.s {
-            cedges.s = max(cedges.s, r.z * CHUNKS_IN_REGION as i32 + region.cedges.s as i32);
+            cedges.s = max(cedges.s, r.z * CHUNKS_IN_REGION as isize + region.cedges.s as isize);
         }
         if r.x == redges.w {
-            cedges.w = min(cedges.w, r.x * CHUNKS_IN_REGION as i32 + region.cedges.w as i32);
+            cedges.w = min(cedges.w, r.x * CHUNKS_IN_REGION as isize + region.cedges.w as isize);
         }
     }
 
     let cbedges = Edges {
-        n: cedges.n * BLOCKS_IN_CHUNK as i32,
-        e: cedges.e * BLOCKS_IN_CHUNK as i32 + MAX_BLOCK_IN_CHUNK as i32,
-        s: cedges.s * BLOCKS_IN_CHUNK as i32 + MAX_BLOCK_IN_CHUNK as i32,
-        w: cedges.w * BLOCKS_IN_CHUNK as i32,
+        n: cedges.n * BLOCKS_IN_CHUNK as isize,
+        e: cedges.e * BLOCKS_IN_CHUNK as isize + MAX_BLOCK_IN_CHUNK as isize,
+        s: cedges.s * BLOCKS_IN_CHUNK as isize + MAX_BLOCK_IN_CHUNK as isize,
+        w: cedges.w * BLOCKS_IN_CHUNK as isize,
     };
 
     Ok(World {

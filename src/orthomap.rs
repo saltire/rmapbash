@@ -55,11 +55,11 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
     color
 }
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &i32,
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
     cblimits: &Edges<usize>, width: &usize) {
     for bz in cblimits.n..(cblimits.s + 1) {
         for bx in cblimits.w..(cblimits.e + 1) {
-            let po = (co + (bz * width + bx) as i32) as usize * 4;
+            let po = (co + (bz * width + bx) as isize) as usize * 4;
             let color = get_block_color(bx, bz, blocktypes, chunk);
             pixels[po] = color.r;
             pixels[po + 1] = color.g;
@@ -70,7 +70,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 }
 
 pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
-    blimits: &Option<Edges<i32>>)
+    blimits: &Option<Edges<isize>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -104,8 +104,8 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
 
                 let arc = Pair {
-                    x: r.x * CHUNKS_IN_REGION as i32 - world.cedges.w,
-                    z: r.z * CHUNKS_IN_REGION as i32 - world.cedges.n,
+                    x: r.x * CHUNKS_IN_REGION as isize - world.cedges.w,
+                    z: r.z * CHUNKS_IN_REGION as isize - world.cedges.n,
                 };
 
                 for cz in (0..CHUNKS_IN_REGION).rev() {
@@ -114,8 +114,8 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
                         if let Some(chunk) = reg.get_chunk(c) {
                             // println!("Drawing chunk {}, {}", c.x, c.z);
                             let wc = Pair {
-                                x: r.x * CHUNKS_IN_REGION as i32 + c.x as i32,
-                                z: r.z * CHUNKS_IN_REGION as i32 + c.z as i32,
+                                x: r.x * CHUNKS_IN_REGION as isize + c.x as isize,
+                                z: r.z * CHUNKS_IN_REGION as isize + c.z as isize,
                             };
                             let cblimits = match blimits {
                                 Some(blimits) => Edges {
@@ -128,11 +128,11 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
                             };
 
                             let ac = Pair {
-                                x: (arc.x + c.x as i32) as usize,
-                                z: (arc.z + c.z as i32) as usize,
+                                x: (arc.x + c.x as isize) as usize,
+                                z: (arc.z + c.z as isize) as usize,
                             };
-                            let co = ((ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK) as i32 -
-                                crop as i32;
+                            let co = ((ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK) as isize -
+                                crop as isize;
 
                             draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
                         }

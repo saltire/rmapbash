@@ -11,14 +11,14 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &i32,
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
     cblimits: &Edges<usize>, width: &usize) {
     for bz in (cblimits.n..(cblimits.s + 1)).rev() {
         for bx in (cblimits.w..(cblimits.e + 1)).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
 
-            let bpx = (ISO_CHUNK_X_MARGIN as i16 +
-                (bx as i16 - bz as i16 - 1) * ISO_BLOCK_X_MARGIN as i16) as usize;
+            let bpx = (ISO_CHUNK_X_MARGIN as isize +
+                (bx as isize - bz as isize - 1) * ISO_BLOCK_X_MARGIN as isize) as usize;
             let bpy2 = (bx + bz) * ISO_BLOCK_Y_MARGIN;
 
             let biome = chunk.data.biomes[bo2] as usize;
@@ -62,7 +62,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
                 for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
-                        let po = (co + ((bpy + y) * width + bpx + x) as i32) as usize * 4;
+                        let po = (co + ((bpy + y) * width + bpx + x) as isize) as usize * 4;
                         if pixels[po + 3] == MAX_CHANNEL_VALUE {
                             continue;
                         }
@@ -85,7 +85,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 }
 
 pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
-    blimits: &Option<Edges<i32>>)
+    blimits: &Option<Edges<isize>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
@@ -126,8 +126,8 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
 
                 let arc = Pair {
-                    x: r.x * CHUNKS_IN_REGION as i32 - world.cedges.w,
-                    z: r.z * CHUNKS_IN_REGION as i32 - world.cedges.n,
+                    x: r.x * CHUNKS_IN_REGION as isize - world.cedges.w,
+                    z: r.z * CHUNKS_IN_REGION as isize - world.cedges.n,
                 };
 
                 for cz in (0..CHUNKS_IN_REGION).rev() {
@@ -136,8 +136,8 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                         if let Some(chunk) = reg.get_chunk(c) {
                             // println!("Drawing chunk {}, {}", c.x, c.z);
                             let wc = Pair {
-                                x: r.x * CHUNKS_IN_REGION as i32 + c.x as i32,
-                                z: r.z * CHUNKS_IN_REGION as i32 + c.z as i32,
+                                x: r.x * CHUNKS_IN_REGION as isize + c.x as isize,
+                                z: r.z * CHUNKS_IN_REGION as isize + c.z as isize,
                             };
                             let cblimits = match blimits {
                                 Some(blimits) => Edges {
@@ -150,14 +150,14 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                             };
 
                             let ac = Pair {
-                                x: (arc.x + c.x as i32) as usize,
-                                z: (arc.z + c.z as i32) as usize,
+                                x: (arc.x + c.x as isize) as usize,
+                                z: (arc.z + c.z as isize) as usize,
                             };
                             let cp = Pair {
                                 x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
                                 z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
                             };
-                            let co = (cp.z * size.x + cp.x) as i32 - crop as i32;
+                            let co = (cp.z * size.x + cp.x) as isize - crop as isize;
 
                             draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
                         }

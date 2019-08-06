@@ -39,7 +39,7 @@ fn main() {
             .long("blocks")
             .number_of_values(4)
             .allow_hyphen_values(true)
-            .validator(|v| v.parse::<i32>().map(|_| ())
+            .validator(|v| v.parse::<isize>().map(|_| ())
                 .map_err(|_| "Block limits must be numbers".to_string()))
             .help("Block limits"))
         .get_matches();
@@ -75,10 +75,10 @@ fn main() {
                     else { "day" };
 
                 let blimits = matches.values_of("b").and_then(|mut b| {
-                    let x1 = b.next().unwrap().parse::<i32>().unwrap();
-                    let z1 = b.next().unwrap().parse::<i32>().unwrap();
-                    let x2 = b.next().unwrap().parse::<i32>().unwrap();
-                    let z2 = b.next().unwrap().parse::<i32>().unwrap();
+                    let x1 = b.next().unwrap().parse::<isize>().unwrap();
+                    let z1 = b.next().unwrap().parse::<isize>().unwrap();
+                    let x2 = b.next().unwrap().parse::<isize>().unwrap();
+                    let z2 = b.next().unwrap().parse::<isize>().unwrap();
                     Some(Edges {
                         n: min(z1, z2),
                         e: max(x1, x2),
