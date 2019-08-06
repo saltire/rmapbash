@@ -11,24 +11,10 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
-fn get_iso_size(csize: &Pair<usize>) -> Pair<usize> {
-    Pair {
-        x: (csize.x + csize.z) * ISO_CHUNK_X_MARGIN,
-        z: (csize.x + csize.z) * ISO_CHUNK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
-    }
-}
-
-fn get_iso_chunk_pixel(ac: &Pair<usize>, csize: &Pair<usize>) -> Pair<usize> {
-    Pair {
-        x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
-        z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
-    }
-}
-
-fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk,
-    co: &usize, width: &usize) {
-    for bz in (0..BLOCKS_IN_CHUNK).rev() {
-        for bx in (0..BLOCKS_IN_CHUNK).rev() {
+fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &i32,
+    cblimits: &Edges<usize>, width: &usize) {
+    for bz in (cblimits.n..(cblimits.s + 1)).rev() {
+        for bx in (cblimits.w..(cblimits.e + 1)).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
 
             let bpx = (ISO_CHUNK_X_MARGIN as i16 +
@@ -76,7 +62,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
                 for y in (if skip_top { ISO_BLOCK_Y_MARGIN } else { 0 })..ISO_BLOCK_HEIGHT {
                     for x in 0..ISO_BLOCK_WIDTH {
-                        let po = (co + (bpy + y) * width + bpx + x) * 4;
+                        let po = (co + ((bpy + y) * width + bpx + x) as i32) as usize * 4;
                         if pixels[po + 3] == MAX_CHANNEL_VALUE {
                             continue;
                         }
@@ -98,21 +84,35 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType])
+pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
+    blimits: &Option<Edges<i32>>)
 -> Result<(), Box<Error>> {
     println!("Creating block map from world dir {}", worldpath.display());
 
-    let world = world::get_world(worldpath)?;
+    let world = world::get_world(worldpath, blimits)?;
 
-    let csize = world.get_chunk_size();
-    let size = get_iso_size(&csize);
+    let csize = world.cedges.size();
+    let bsize = world.bedges.size();
+    let size = Pair {
+        x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
+        z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
+    };
+    let cbcrop = match blimits {
+        Some(blimits) => Pair {
+            x: block_pos_in_chunk(blimits.w, None),
+            z: block_pos_in_chunk(blimits.n, None),
+        },
+        None => Pair { x: 0, z: 0 },
+    };
+    let crop = (cbcrop.x + cbcrop.z) * ISO_BLOCK_Y_MARGIN * size.x +
+        (cbcrop.x + cbcrop.z) * ISO_BLOCK_X_MARGIN;
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
     let len = world.regions.len();
 
-    for rz in (world.rlimits.n..world.rlimits.s + 1).rev() {
-        for rx in (world.rlimits.w..world.rlimits.e + 1).rev() {
+    for rz in (world.redges.n..world.redges.s + 1).rev() {
+        for rx in (world.redges.w..world.redges.e + 1).rev() {
             let r = &Pair { x: rx, z: rz };
             if !world.regions.contains_key(&r) {
                 continue;
@@ -120,31 +120,51 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
-                println!("Drawing block map for region {}, {}", r.x, r.z);
-                let ar = Pair {
-                    x: (r.x - world.rlimits.w) as usize,
-                    z: (r.z - world.rlimits.n) as usize,
+            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
+                let chunk_count = reg.chunks.len();
+                println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
+                    chunk_count, if chunk_count == 1 { "" } else { "s" });
+
+                let arc = Pair {
+                    x: r.x * CHUNKS_IN_REGION as i32 - world.cedges.w,
+                    z: r.z * CHUNKS_IN_REGION as i32 - world.cedges.n,
                 };
 
                 for cz in (0..CHUNKS_IN_REGION).rev() {
                     for cx in (0..CHUNKS_IN_REGION).rev() {
                         let c = &Pair { x: cx, z: cz };
-                        if !reg.chunks.contains_key(c) {
-                            continue;
+                        if let Some(chunk) = reg.get_chunk(c) {
+                            // println!("Drawing chunk {}, {}", c.x, c.z);
+                            let wc = Pair {
+                                x: r.x * CHUNKS_IN_REGION as i32 + c.x as i32,
+                                z: r.z * CHUNKS_IN_REGION as i32 + c.z as i32,
+                            };
+                            let cblimits = match blimits {
+                                Some(blimits) => Edges {
+                                    n: block_pos_in_chunk(blimits.n, Some(wc.z)),
+                                    e: block_pos_in_chunk(blimits.e, Some(wc.x)),
+                                    s: block_pos_in_chunk(blimits.s, Some(wc.z)),
+                                    w: block_pos_in_chunk(blimits.w, Some(wc.x)),
+                                },
+                                None => Edges::<usize>::full(BLOCKS_IN_CHUNK),
+                            };
+
+                            let ac = Pair {
+                                x: (arc.x + c.x as i32) as usize,
+                                z: (arc.z + c.z as i32) as usize,
+                            };
+                            let cp = Pair {
+                                x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
+                                z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
+                            };
+                            let co = (cp.z * size.x + cp.x) as i32 - crop as i32;
+
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
                         }
-
-                        // println!("Drawing chunk {}, {}", c.x, c.z);
-                        let ac = Pair {
-                            x: ar.x * CHUNKS_IN_REGION + c.x - world.margins.w,
-                            z: ar.z * CHUNKS_IN_REGION + c.z - world.margins.n,
-                        };
-                        let cp = get_iso_chunk_pixel(&ac, &csize);
-                        let co = cp.z * size.x + cp.x;
-
-                        draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
                     }
                 }
+            } else {
+                println!("No data in region.");
             }
         }
     }
@@ -152,55 +172,5 @@ pub fn draw_world_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockT
     let file = File::create(outpath)?;
     image::draw_block_map(&pixels, size, file, true)?;
 
-    Ok(())
-}
-
-pub fn draw_region_iso_map(worldpath: &Path, r: &Pair<i32>, outpath: &Path, blocktypes: &[BlockType])
--> Result<(), Box<Error>> {
-    println!("Reading block data for region {}, {}", r.x, r.z);
-    if let Some(reg) = region::read_region_data(worldpath, r, blocktypes)? {
-        if reg.chunks.keys().len() > 0 {
-            println!("Drawing block map");
-
-            let climits = Edges {
-                n: reg.chunks.keys().map(|c| c.z).min().unwrap(),
-                e: reg.chunks.keys().map(|c| c.x).max().unwrap(),
-                s: reg.chunks.keys().map(|c| c.z).max().unwrap(),
-                w: reg.chunks.keys().map(|c| c.x).min().unwrap(),
-            };
-            let csize = Pair {
-                x: climits.e - climits.w + 1,
-                z: climits.s - climits.n + 1,
-            };
-            let size = get_iso_size(&csize);
-            let mut pixels = vec![0u8; size.x * size.z * 4];
-
-            for cz in (0..CHUNKS_IN_REGION).rev() {
-                for cx in (0..CHUNKS_IN_REGION).rev() {
-                    let c = &Pair { x: cx, z: cz };
-                    if !reg.chunks.contains_key(c) {
-                        continue;
-                    }
-
-                    // println!("Drawing chunk {}, {}", c.x, c.z);
-                    let ac = Pair {
-                        x: c.x - climits.w,
-                        z: c.z - climits.n,
-                    };
-                    let cp = get_iso_chunk_pixel(&ac, &csize);
-                    let co = cp.z * size.x + cp.x;
-
-                    draw_chunk(&mut pixels, blocktypes, &reg.get_chunk(c), &co, &size.x);
-                }
-            }
-
-            let file = File::create(outpath)?;
-            image::draw_block_map(&pixels, size, file, true)?;
-
-            return Ok(())
-        }
-    }
-
-    println!("No data in region.");
     Ok(())
 }
