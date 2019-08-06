@@ -16,7 +16,6 @@ pub struct World {
     pub redges: Edges<i32>,
     pub cedges: Edges<i32>,
     pub bedges: Edges<i32>,
-    pub csize: Pair<usize>,
 }
 
 pub fn read_world_regions(path: &Path, blimits: &Option<Edges<i32>>)
@@ -126,10 +125,6 @@ pub fn get_world(worldpath: &Path, blimits: &Option<Edges<i32>>) -> Result<World
                 w: max(cbedges.w, blimits.w),
             },
             None => cbedges,
-        },
-        csize: Pair {
-            x: (cedges.e - cedges.w + 1) as usize,
-            z: (cedges.s - cedges.n + 1) as usize,
         },
     })
 }

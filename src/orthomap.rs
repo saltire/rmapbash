@@ -75,10 +75,7 @@ pub fn draw_ortho_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType]
     println!("Creating block map from world dir {}", worldpath.display());
 
     let world = world::get_world(worldpath, blimits)?;
-    let size = Pair {
-        x: (world.bedges.e - world.bedges.w + 1) as usize,
-        z: (world.bedges.s - world.bedges.n + 1) as usize,
-    };
+    let size = world.bedges.size();
     let cbcrop = match blimits {
         Some(blimits) => Pair {
             x: block_pos_in_chunk(blimits.w, None),

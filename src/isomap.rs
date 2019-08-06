@@ -91,10 +91,8 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
 
     let world = world::get_world(worldpath, blimits)?;
 
-    let bsize = Pair {
-        x: (world.bedges.e - world.bedges.w + 1) as usize,
-        z: (world.bedges.s - world.bedges.n + 1) as usize,
-    };
+    let csize = world.cedges.size();
+    let bsize = world.bedges.size();
     let size = Pair {
         x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
         z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
@@ -156,7 +154,7 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                                 z: (arc.z + c.z as i32) as usize,
                             };
                             let cp = Pair {
-                                x: (ac.x + world.csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
+                                x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
                                 z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
                             };
                             let co = (cp.z * size.x + cp.x) as i32 - crop as i32;

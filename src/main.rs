@@ -23,7 +23,7 @@ fn main() {
     let matches = App::new("rmapbash")
         .about("Minecraft map renderer")
         .arg(Arg::with_name("PATH")
-            .help("Path to either a save directory, a region file (.mca), or a data file (.dat)")
+            .help("Path to either a save directory or a .dat file")
             .required(true)
             .index(1))
         .arg(Arg::with_name("i")
@@ -40,7 +40,7 @@ fn main() {
             .number_of_values(4)
             .allow_hyphen_values(true)
             .validator(|v| v.parse::<i32>().map(|_| ())
-                .map_err(|_| "Limits must be numbers".to_string()))
+                .map_err(|_| "Block limits must be numbers".to_string()))
             .help("Block limits"))
         .get_matches();
 

@@ -1,3 +1,5 @@
+use num_traits::{cast::ToPrimitive, int::PrimInt};
+
 #[derive(Clone, Copy, Debug)]
 pub struct Edges<T> {
     pub n: T,
@@ -11,10 +13,10 @@ impl <T> Edges<T> {
         point.x >= self.w && point.x <= self.e && point.z >= self.n && point.z <= self.s
     }
 
-    pub fn size(&self) -> Pair<usize> where T: std::ops::Sub + std::ops::Add {
+    pub fn size(&self) -> Pair<usize> where T: PrimInt + ToPrimitive {
         Pair {
-            x: (self.e - self.w + 1) as usize,
-            z: (self.s - self.n + 1) as usize,
+            x: (self.e - self.w).to_usize().unwrap() + 1,
+            z: (self.s - self.n).to_usize().unwrap() + 1,
         }
     }
 
