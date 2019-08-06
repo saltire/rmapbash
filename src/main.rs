@@ -22,6 +22,8 @@ use types::*;
 fn main() {
     let matches = App::new("rmapbash")
         .about("Minecraft map renderer")
+        .author("saltiresable@gmail.com")
+        .version("0.1.0")
         .arg(Arg::with_name("PATH")
             .help("Path to either a save directory or a .dat file")
             .required(true)
