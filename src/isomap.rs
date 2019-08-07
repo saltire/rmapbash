@@ -6,6 +6,7 @@ use super::blocktypes::BlockType;
 use super::color;
 use super::color::RGBA;
 use super::image;
+use super::options::Options;
 use super::region;
 use super::sizes::*;
 use super::types::*;
@@ -84,12 +85,11 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
-    blimits: &Option<Edges<isize>>)
+pub fn draw_iso_map(options: &Options, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
-    println!("Creating block map from world dir {}", worldpath.display());
+    println!("Creating block map from world dir {}", options.inpath.display());
 
-    let world = world::get_world(worldpath, blimits)?;
+    let world = world::get_world(options.inpath, &options.blimits)?;
 
     let csize = world.cedges.size();
     let bsize = world.bedges.size();
@@ -97,7 +97,7 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
         x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
         z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
     };
-    let cbcrop = match blimits {
+    let cbcrop = match options.blimits {
         Some(blimits) => Pair {
             x: block_pos_in_chunk(blimits.w, None),
             z: block_pos_in_chunk(blimits.n, None),
@@ -120,7 +120,8 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
+            if let Some(reg) = region::read_region_data(
+                options.inpath, r, blocktypes, &options.blimits)? {
                 let chunk_count = reg.chunks.len();
                 println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
@@ -139,7 +140,7 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                                 x: r.x * CHUNKS_IN_REGION as isize + c.x as isize,
                                 z: r.z * CHUNKS_IN_REGION as isize + c.z as isize,
                             };
-                            let cblimits = match blimits {
+                            let cblimits = match options.blimits {
                                 Some(blimits) => Edges {
                                     n: block_pos_in_chunk(blimits.n, Some(wc.z)),
                                     e: block_pos_in_chunk(blimits.e, Some(wc.x)),
