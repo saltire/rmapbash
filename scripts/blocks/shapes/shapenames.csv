@@ -3,12 +3,16 @@ solid shadows
 solid no shadows
 flat
 inverted flat
-flat alternate colour
+rail flat
+rail north
+rail east
+rail south
+rail west
 small square shadows
 small square no shadows
-grass
 half block
 inverted half block
+half block alternate colour bottom
 stairs north
 stairs east
 stairs south
@@ -25,7 +29,6 @@ alternate colour bottom half
 alternate colour middle
 alternate colour middle left
 alternate colour middle right
-fence
 fire
 ladder facing north
 ladder facing east
@@ -56,10 +59,17 @@ wall torch east
 wall torch south
 wall torch west
 reeds
+sapling
+grass
+bush
 flower bush top
 sunflower top
+tall grass top
+tall fern top
 flower bush bottom
 sunflower bottom
+tall grass bottom
+tall fern bottom
 crops low
 crops mid
 crops high

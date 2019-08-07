@@ -1,12 +1,10 @@
 air,,empty
-allium,,small two colour
-azure_bluet,,small two colour
 bamboo,,rod upright
 beetroots,age=0,crops low
 beetroots,age=1,crops mid
 beetroots,age=2,crops high
 beetroots,age=3,crops high alternate colour
-blue_orchid,,small two colour
+brick_wall,,rod upright
 brown_mushroom,,small one colour
 campfire,,fire
 carrots,age=0,crops low
@@ -21,18 +19,19 @@ carved_pumpkin,facing=east,alternate colour middle right
 carved_pumpkin,facing=south,alternate colour middle left
 carved_pumpkin,,solid shadows
 cave_air,,empty
-cornflower,,small two colour
-dandelion,,small two colour
+dead_bush,,bush
+fern,,crops high
 fire,,fire
 grass,,grass
 grass_block,,alternate colour bottom half
 grass_path,,alternate colour sides
-lilac,half=lower,flower bush bottom
-lilac,half=upper,flower bush top
-lily_of_the_valley,,small two colour
+iron_bars,,reeds
+large_fern,half=lower,tall fern bottom
+large_fern,half=upper,tall fern top
 lily_pad,,small flat
-oak_fence,,fence
+oak_fence,,rod upright
 oak_pressure_plate,,small flat
+oak_sapling,,sapling
 oak_slab,type=bottom,half block
 oak_slab,type=top,inverted half block
 oak_slab,type=double,solid shadows
@@ -44,19 +43,20 @@ oak_stairs,facing=north&half=top,stairs inverted north
 oak_stairs,facing=east&half=top,stairs inverted east
 oak_stairs,facing=south&half=top,stairs inverted south
 oak_stairs,facing=west&half=top,stairs inverted west
-orange_tulip,,small two colour
-oxeye_daisy,,small two colour
-peony,half=lower,flower bush bottom
-peony,half=upper,flower bush top
-pink_tulip,,small two colour
 poppy,,small two colour
+rail,shape=ascending_north,rail north
+rail,shape=ascending_east,rail east
+rail,shape=ascending_south,rail south
+rail,shape=ascending_west,rail west
+rail,,rail flat
 red_mushroom,,small two colour
-red_tulip,,small two colour
 rose_bush,half=lower,flower bush bottom
 rose_bush,half=upper,flower bush top
 sugar_cane,,reeds
 sunflower,half=lower,sunflower bottom
 sunflower,half=upper,sunflower top
+tall_grass,half=lower,tall grass bottom
+tall_grass,half=upper,tall grass top
 torch,,small two colour
 vine,north=true&east=false&south=false&west=false,vines north
 vine,north=false&east=true&south=false&west=false,vines east
@@ -87,6 +87,5 @@ wheat,age=4,crops mid
 wheat,age=5,crops mid
 wheat,age=6,crops mid
 wheat,age=7,crops high
+white_bed,,half block alternate colour bottom
 white_carpet,,flat
-white_tulip,,small two colour
-wither_rose,,small two colour
