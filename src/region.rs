@@ -16,6 +16,7 @@ use super::blocktypes::BlockType;
 use super::nbt;
 use super::sizes::*;
 use super::types::*;
+use super::world::World;
 
 pub struct Block {
     pub btype: u16,
@@ -328,22 +329,18 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
     Ok(chunks)
 }
 
-pub fn read_region_data(worldpath: &Path, r: &Pair<isize>, blocktypes: &[BlockType],
-    blimits: &Option<Edges<isize>>)
+pub fn read_region_data(world: &World, r: &Pair<isize>, blocktypes: &[BlockType])
 -> Result<Option<RegionData>, Box<Error>> {
-    let regionpath = get_path_from_coords(worldpath, &r);
+    let regionpath = get_path_from_coords(world.path, &r);
     if !regionpath.exists() {
         return Ok(None);
     }
 
-    let rclimits = match blimits {
-        Some(blimits) => Edges {
-            n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
-            e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
-            s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
-            w: chunk_pos_in_region(block_to_chunk(blimits.w), Some(r.x)),
-        },
-        None => Edges::<usize>::full(CHUNKS_IN_REGION),
+    let rclimits = Edges {
+        n: chunk_pos_in_region(block_to_chunk(world.bedges.n), Some(r.z)),
+        e: chunk_pos_in_region(block_to_chunk(world.bedges.e), Some(r.x)),
+        s: chunk_pos_in_region(block_to_chunk(world.bedges.s), Some(r.z)),
+        w: chunk_pos_in_region(block_to_chunk(world.bedges.w), Some(r.x)),
     };
 
     let chunks = read_region_chunk_data(&regionpath, &rclimits, blocktypes)?;
@@ -352,10 +349,10 @@ pub fn read_region_data(worldpath: &Path, r: &Pair<isize>, blocktypes: &[BlockTy
     }
 
     let npaths = Edges {
-        n: get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z - 1 }),
-        e: get_path_from_coords(worldpath, &Pair { x: r.x + 1, z: r.z }),
-        s: get_path_from_coords(worldpath, &Pair { x: r.x, z: r.z + 1 }),
-        w: get_path_from_coords(worldpath, &Pair { x: r.x - 1, z: r.z }),
+        n: get_path_from_coords(world.path, &Pair { x: r.x, z: r.z - 1 }),
+        e: get_path_from_coords(world.path, &Pair { x: r.x + 1, z: r.z }),
+        s: get_path_from_coords(world.path, &Pair { x: r.x, z: r.z + 1 }),
+        w: get_path_from_coords(world.path, &Pair { x: r.x - 1, z: r.z }),
     };
     let nrclimits = Edges {
         n: Edges { n: MAX_CHUNK_IN_REGION, e: rclimits.e, s: MAX_CHUNK_IN_REGION, w: rclimits.w },

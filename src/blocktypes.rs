@@ -8,6 +8,7 @@ use serde::Deserialize;
 use super::biometypes;
 use super::color;
 use super::color::{RGBA, RGB};
+use super::options::Lighting;
 use super::sizes::*;
 
 #[derive(Deserialize)]
@@ -53,12 +54,12 @@ impl PartialEq for BlockType {
 const HILIGHT_SHADOW_AMOUNT_DAY: f64 = 0.125;
 const HILIGHT_SHADOW_AMOUNT_NIGHT: f64 = 0.05;
 
-pub fn get_block_types(lighting: &str) -> Vec<BlockType> {
+pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
     let mut blocktypes = Vec::new();
 
     let biome_types = biometypes::get_biome_types();
 
-    let lightfile = format!("./resources/light/{}.csv", lighting);
+    let lightfile = format!("./resources/light/{:?}.csv", lighting).to_lowercase();
     let lightpath = Path::new(&lightfile);
     let mut lightreader = Reader::from_path(lightpath).unwrap();
     let lightrows: Vec<LightRow> = lightreader.deserialize().map(|res| res.unwrap()).collect();
@@ -70,7 +71,7 @@ pub fn get_block_types(lighting: &str) -> Vec<BlockType> {
             b: row.b.unwrap(),
         };
     }
-    let hilight_shadow_amount = if lighting == "night" { HILIGHT_SHADOW_AMOUNT_NIGHT }
+    let hilight_shadow_amount = if *lighting == Lighting::Night { HILIGHT_SHADOW_AMOUNT_NIGHT }
         else { HILIGHT_SHADOW_AMOUNT_DAY };
 
     let blockpath = Path::new("./resources/blocks.csv");

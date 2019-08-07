@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::fs::File;
 use std::path::Path;
 
 use super::blocktypes::BlockType;
@@ -9,7 +8,7 @@ use super::image;
 use super::region;
 use super::sizes::*;
 use super::types::*;
-use super::world;
+use super::world::World;
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
     cblimits: &Edges<usize>, width: &usize) {
@@ -84,25 +83,17 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
-    blimits: &Option<Edges<isize>>)
+pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
 -> Result<(), Box<Error>> {
-    println!("Creating block map from world dir {}", worldpath.display());
-
-    let world = world::get_world(worldpath, blimits)?;
-
     let csize = world.cedges.size();
     let bsize = world.bedges.size();
     let size = Pair {
         x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
         z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
     };
-    let cbcrop = match blimits {
-        Some(blimits) => Pair {
-            x: block_pos_in_chunk(blimits.w, None),
-            z: block_pos_in_chunk(blimits.n, None),
-        },
-        None => Pair { x: 0, z: 0 },
+    let cbcrop = Pair {
+        x: block_pos_in_chunk(world.bedges.w, None),
+        z: block_pos_in_chunk(world.bedges.n, None),
     };
     let crop = (cbcrop.x + cbcrop.z) * ISO_BLOCK_Y_MARGIN * size.x +
         (cbcrop.x + cbcrop.z) * ISO_BLOCK_X_MARGIN;
@@ -120,7 +111,7 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
 
             i += 1;
             println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
-            if let Some(reg) = region::read_region_data(worldpath, r, blocktypes, blimits)? {
+            if let Some(reg) = region::read_region_data(&world, r, blocktypes)? {
                 let chunk_count = reg.chunks.len();
                 println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
@@ -139,14 +130,11 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
                                 x: r.x * CHUNKS_IN_REGION as isize + c.x as isize,
                                 z: r.z * CHUNKS_IN_REGION as isize + c.z as isize,
                             };
-                            let cblimits = match blimits {
-                                Some(blimits) => Edges {
-                                    n: block_pos_in_chunk(blimits.n, Some(wc.z)),
-                                    e: block_pos_in_chunk(blimits.e, Some(wc.x)),
-                                    s: block_pos_in_chunk(blimits.s, Some(wc.z)),
-                                    w: block_pos_in_chunk(blimits.w, Some(wc.x)),
-                                },
-                                None => Edges::<usize>::full(BLOCKS_IN_CHUNK),
+                            let cblimits = Edges {
+                                n: block_pos_in_chunk(world.bedges.n, Some(wc.z)),
+                                e: block_pos_in_chunk(world.bedges.e, Some(wc.x)),
+                                s: block_pos_in_chunk(world.bedges.s, Some(wc.z)),
+                                w: block_pos_in_chunk(world.bedges.w, Some(wc.x)),
                             };
 
                             let ac = Pair {
@@ -169,8 +157,7 @@ pub fn draw_iso_map(worldpath: &Path, outpath: &Path, blocktypes: &[BlockType],
         }
     }
 
-    let file = File::create(outpath)?;
-    image::draw_block_map(&pixels, size, file, true)?;
+    image::draw_block_map(&pixels, size, outpath, true)?;
 
     Ok(())
 }

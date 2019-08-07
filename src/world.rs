@@ -11,7 +11,8 @@ pub struct Region {
     pub cedges: Edges<usize>,
 }
 
-pub struct World {
+pub struct World<'a> {
+    pub path: &'a Path,
     pub regions: HashMap<Pair<isize>, Region>,
     pub redges: Edges<isize>,
     pub cedges: Edges<isize>,
@@ -70,7 +71,8 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
     Ok(regions)
 }
 
-pub fn get_world(worldpath: &Path, blimits: &Option<Edges<isize>>) -> Result<World, Error> {
+pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>)
+-> Result<World<'a>, Error> {
     let regions = read_world_regions(worldpath, blimits)?;
     if regions.len() == 0 {
         return Err(Error::new(ErrorKind::NotFound, "No data in world."));
@@ -114,6 +116,7 @@ pub fn get_world(worldpath: &Path, blimits: &Option<Edges<isize>>) -> Result<Wor
     };
 
     Ok(World {
+        path: worldpath,
         regions,
         redges,
         cedges,
