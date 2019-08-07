@@ -5,6 +5,10 @@ Reads a saved Minecraft world from disk and outputs a rendered .PNG image.
 
 ![Isometric day mode](./samples/iso-day.png?raw=true)
 
+![Isometric night mode](./samples/iso-night.png?raw=true)
+
+![Orthographic day mode](./samples/ortho-day.png?raw=true)
+
 ![Orthographic night mode](./samples/ortho-night.png?raw=true)
 
 ### Features so far
