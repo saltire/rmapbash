@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::path::Path;
 use std::time::Instant;
 
@@ -53,42 +54,47 @@ fn main() {
             Ok(()) => println!("Done."),
             Err(err) => eprintln!("Error reading data: {}", err),
         },
-        _ => {
-            let outdir = Path::new("./results");
-            std::fs::create_dir_all(outdir).unwrap();
-            let outpathbuf = outdir.join("world.png");
-            let outpath = outpathbuf.as_path();
+        _ => match draw_map(&options) {
+            Ok(()) => println!("Done."),
+            Err(err) => eprintln!("Error creating map: {}", err),
+        },
+    };
+}
 
-            println!("View:     {:?}", options.view);
-            println!("Lighting: {:?}", options.lighting);
-            println!("Limits:   {}", if let Some(blimits) = options.blimits {
-                format!("({}, {}) - ({}, {})", blimits.w, blimits.n, blimits.e, blimits.s)
-            } else {
-                "none".to_string()
-            });
+fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
+    let outdir = Path::new("./results");
+    std::fs::create_dir_all(outdir).unwrap();
+    let outpathbuf = outdir.join("world.png");
+    let outpath = outpathbuf.as_path();
 
-            let start = Instant::now();
+    println!("View:     {:?}", options.view);
+    println!("Lighting: {:?}", options.lighting);
+    println!("Limits:   {}", if let Some(blimits) = options.blimits {
+        format!("({}, {}) - ({}, {})", blimits.w, blimits.n, blimits.e, blimits.s)
+    } else {
+        "none".to_string()
+    });
 
-            println!("Getting block types");
-            let blocktypes = blocktypes::get_block_types(&options.lighting);
+    let start = Instant::now();
 
-            let result = match options.view {
-                View::Isometric =>
-                    isomap::draw_iso_map(&options, outpath, &blocktypes),
-                View::Orthographic =>
-                    orthomap::draw_ortho_map(&options, outpath, &blocktypes),
-            };
+    println!("Getting world info from world dir {}", options.inpath.display());
+    let world = world::get_world(options.inpath, &options.blimits)?;
 
-            let elapsed = start.elapsed();
-            let mins = elapsed.as_secs() / 60;
-            let secs = elapsed.as_secs() % 60;
-            let ms = elapsed.subsec_millis();
-            println!("Time elapsed: {}:{:02}.{:03}", mins, secs, ms);
+    println!("Getting block types");
+    let blocktypes = blocktypes::get_block_types(&options.lighting);
 
-            match result {
-                Ok(()) => println!("Saved map to {}", outpath.display()),
-                Err(err) => eprintln!("Error creating map: {}", err),
-            }
-        }
-    }
+    let result = match options.view {
+        View::Isometric =>
+            isomap::draw_iso_map(&world, outpath, &blocktypes),
+        View::Orthographic =>
+            orthomap::draw_ortho_map(&world, outpath, &blocktypes),
+    };
+
+    let elapsed = start.elapsed();
+    let mins = elapsed.as_secs() / 60;
+    let secs = elapsed.as_secs() % 60;
+    let ms = elapsed.subsec_millis();
+    println!("Time elapsed: {}:{:02}.{:03}", mins, secs, ms);
+
+    result
 }
