@@ -78,8 +78,6 @@ pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>)
         return Err(Error::new(ErrorKind::NotFound, "No data in world."));
     }
 
-    println!("Reading chunk boundaries");
-
     let redges = Edges {
         n: regions.keys().map(|r| r.z).min().unwrap(),
         e: regions.keys().map(|r| r.x).max().unwrap(),

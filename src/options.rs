@@ -1,4 +1,5 @@
 use std::cmp::{min, max};
+use std::fmt;
 use std::path::Path;
 
 use super::types::*;
@@ -9,12 +10,24 @@ pub enum View {
     Orthographic,
 }
 
+impl fmt::Display for View {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Lighting {
     Day,
     Night,
     Nether,
     End,
+}
+
+impl fmt::Display for Lighting {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub struct Options<'a> {

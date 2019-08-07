@@ -67,8 +67,8 @@ fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
     let outpathbuf = outdir.join("world.png");
     let outpath = outpathbuf.as_path();
 
-    println!("View:     {:?}", options.view);
-    println!("Lighting: {:?}", options.lighting);
+    println!("View:     {}", options.view);
+    println!("Lighting: {}", options.lighting);
     println!("Limits:   {}", if let Some(blimits) = options.blimits {
         format!("({}, {}) - ({}, {})", blimits.w, blimits.n, blimits.e, blimits.s)
     } else {
@@ -83,6 +83,7 @@ fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types(&options.lighting);
 
+    println!("Starting block map");
     let result = match options.view {
         View::Isometric =>
             isomap::draw_iso_map(&world, outpath, &blocktypes),

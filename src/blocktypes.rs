@@ -59,7 +59,7 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
 
     let biome_types = biometypes::get_biome_types();
 
-    let lightfile = format!("./resources/light/{:?}.csv", lighting).to_lowercase();
+    let lightfile = format!("./resources/light/{}.csv", lighting).to_lowercase();
     let lightpath = Path::new(&lightfile);
     let mut lightreader = Reader::from_path(lightpath).unwrap();
     let lightrows: Vec<LightRow> = lightreader.deserialize().map(|res| res.unwrap()).collect();
