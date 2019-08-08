@@ -91,12 +91,14 @@ pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
         x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
         z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
     };
-    let cbcrop = Pair {
-        x: block_pos_in_chunk(world.bedges.w, None),
-        z: block_pos_in_chunk(world.bedges.n, None),
+    let cbcrop = Edges {
+        n: block_pos_in_chunk(world.bedges.n, None),
+        e: MAX_BLOCK_IN_CHUNK - block_pos_in_chunk(world.bedges.e, None),
+        s: MAX_BLOCK_IN_CHUNK - block_pos_in_chunk(world.bedges.s, None),
+        w: block_pos_in_chunk(world.bedges.w, None),
     };
-    let crop = (cbcrop.x + cbcrop.z) * ISO_BLOCK_Y_MARGIN * size.x +
-        (cbcrop.x + cbcrop.z) * ISO_BLOCK_X_MARGIN;
+    let crop = (cbcrop.w + cbcrop.n) * ISO_BLOCK_Y_MARGIN * size.x +
+        (cbcrop.w + cbcrop.s) * ISO_BLOCK_X_MARGIN;
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
