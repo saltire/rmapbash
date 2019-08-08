@@ -25,10 +25,18 @@ fn main() {
         .about("Minecraft map renderer")
         .author("saltiresable@gmail.com")
         .version("0.1.0")
-        .arg(Arg::with_name("PATH")
+        .arg(Arg::with_name("INPATH")
             .help("Path to either a save directory or a .dat file")
             .required(true)
             .index(1))
+        .arg(Arg::with_name("OUTPATH")
+            .help("Path to an output .png file")
+            .default_value("world.png")
+            .validator(|v| match Path::new(&v).extension() {
+                Some(ext) if ext == "png" => Ok(()),
+                _ => Err("Output path must be a .png file".to_string()),
+            })
+            .index(2))
         .arg(Arg::with_name("i")
             .short("i")
             .long("isometric")
@@ -69,11 +77,6 @@ fn main() {
 }
 
 fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
-    let outdir = Path::new("./results");
-    std::fs::create_dir_all(outdir).unwrap();
-    let outpathbuf = outdir.join("world.png");
-    let outpath = outpathbuf.as_path();
-
     println!("View:              {}", options.view);
     println!("Lighting:          {}", options.lighting);
     println!("Horizontal limits: {}", if let Some(blimits) = options.blimits {
@@ -85,6 +88,8 @@ fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
 
     let start = Instant::now();
 
+    std::fs::create_dir_all(options.outpath.parent().unwrap())?;
+
     println!("Getting world info from world dir {}", options.inpath.display());
     let world = world::get_world(options.inpath, &options.blimits, &options.ylimits)?;
 
@@ -94,9 +99,9 @@ fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
     println!("Starting block map");
     let result = match options.view {
         View::Isometric =>
-            isomap::draw_iso_map(&world, outpath, &blocktypes),
+            isomap::draw_iso_map(&world, options.outpath, &blocktypes),
         View::Orthographic =>
-            orthomap::draw_ortho_map(&world, outpath, &blocktypes),
+            orthomap::draw_ortho_map(&world, options.outpath, &blocktypes),
     };
 
     let elapsed = start.elapsed();

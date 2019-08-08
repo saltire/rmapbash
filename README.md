@@ -22,7 +22,7 @@ Reads a saved Minecraft world from disk and outputs a rendered .PNG image.
 
 ```
 USAGE:
-    rmapbash [FLAGS] [OPTIONS] <PATH>
+    rmapbash [FLAGS] [OPTIONS] <INPATH> [OUTPATH]
 
 FLAGS:
     -h, --help         Prints help information
@@ -35,7 +35,8 @@ OPTIONS:
     -y, --yblocks <MIN> <MAX>       Vertical block limits
 
 ARGS:
-    <PATH>    Path to either a save directory or a .dat file
+    <INPATH>     Path to either a save directory or a .dat file
+    <OUTPATH>    Path to an output .png file [default: world.png]
 ```
 
 ### About

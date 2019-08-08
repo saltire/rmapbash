@@ -2,5 +2,6 @@
 **/*.rs.bk
 
 /results
+/world.png
 
 __pycache__

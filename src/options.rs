@@ -34,6 +34,7 @@ impl fmt::Display for Lighting {
 
 pub struct Options<'a> {
     pub inpath: &'a Path,
+    pub outpath: &'a Path,
     pub view: View,
     pub lighting: Lighting,
     pub blimits: Option<Edges<isize>>,
@@ -41,10 +42,12 @@ pub struct Options<'a> {
 }
 
 pub fn get_options<'a>(matches: &'a clap::ArgMatches) -> Options<'a> {
-    let inpath = Path::new(matches.value_of("PATH").unwrap());
+    let inpath = Path::new(matches.value_of("INPATH").unwrap());
+    let outpath = Path::new(matches.value_of("OUTPATH").unwrap());
 
     Options {
         inpath,
+        outpath,
         view: if matches.is_present("i") { View::Isometric } else { View::Orthographic },
         lighting: match inpath.file_stem().unwrap().to_str() {
             Some("DIM-1") => Lighting::Nether,
