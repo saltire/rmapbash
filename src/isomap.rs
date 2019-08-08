@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::ops::Range;
 use std::path::Path;
 
 use super::blocktypes::BlockType;
@@ -11,7 +12,7 @@ use super::types::*;
 use super::world::World;
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
-    cblimits: &Edges<usize>, width: &usize) {
+    width: &usize, cblimits: &Edges<usize>, ylimits: &Range<usize>) {
     for bz in (cblimits.n..(cblimits.s + 1)).rev() {
         for bx in (cblimits.w..(cblimits.e + 1)).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
@@ -22,7 +23,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
 
             let biome = chunk.data.biomes[bo2] as usize;
 
-            for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
+            for by in ylimits.clone().rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
                 let btype = chunk.data.blocks[bo3];
                 let blocktype = &blocktypes[btype as usize];
@@ -31,7 +32,7 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
                 }
 
                 // Get the base color of the block.
-                let tblock = chunk.get_t_block(&by, &bo3);
+                let tblock = chunk.get_t_block(&by, &bo3, ylimits.end - 1);
                 let tcolor = &blocktype.colors[biome][tblock.slight][tblock.blight][1];
                 let tcolor2 = &blocktype.colors[biome][tblock.slight][tblock.blight][4];
                 // Don't draw the top if the block above is the same as this one and solid.
@@ -149,7 +150,8 @@ pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                             };
                             let co = (cp.z * size.x + cp.x) as isize - crop as isize;
 
-                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x, &cblimits,
+                                world.ylimits);
                         }
                     }
                 }

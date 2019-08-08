@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::ops::Range;
 use std::path::Path;
 
 use super::blocktypes::BlockType;
@@ -10,14 +11,15 @@ use super::types::*;
 use super::world::World;
 
 
-fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &region::Chunk)
+fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &region::Chunk,
+    ylimits: &Range<usize>)
 -> color::RGBA {
     let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
     let bo2 = bz * BLOCKS_IN_CHUNK + bx;
     let biome = chunk.data.biomes[bo2] as usize;
 
-    for by in (0..BLOCKS_IN_CHUNK_Y).rev() {
+    for by in ylimits.clone().rev() {
         let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
         let btype = chunk.data.blocks[bo3];
         let blocktype = &blocktypes[btype as usize];
@@ -25,7 +27,7 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
             continue;
         }
 
-        let tblock = chunk.get_t_block(&by, &bo3);
+        let tblock = chunk.get_t_block(&by, &bo3, ylimits.end - 1);
         let nblocks = Edges {
             n: chunk.get_n_block(&bz, &bo3),
             e: chunk.get_e_block(&bx, &bo3),
@@ -55,11 +57,11 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
 }
 
 fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
-    cblimits: &Edges<usize>, width: &usize) {
+    width: &usize, cblimits: &Edges<usize>, ylimits: &Range<usize>) {
     for bz in cblimits.n..(cblimits.s + 1) {
         for bx in cblimits.w..(cblimits.e + 1) {
             let po = (co + (bz * width + bx) as isize) as usize * 4;
-            let color = get_block_color(bx, bz, blocktypes, chunk);
+            let color = get_block_color(bx, bz, blocktypes, chunk, ylimits);
             pixels[po] = color.r;
             pixels[po + 1] = color.g;
             pixels[po + 2] = color.b;
@@ -123,7 +125,8 @@ pub fn draw_ortho_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                             let co = ((ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK) as isize -
                                 crop as isize;
 
-                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &cblimits, &size.x);
+                            draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x, &cblimits,
+                                world.ylimits);
                         }
                     }
                 }

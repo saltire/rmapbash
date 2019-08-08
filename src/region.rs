@@ -42,13 +42,13 @@ pub struct Chunk<'a> {
 }
 
 impl<'a> Chunk<'a> {
-    pub fn get_t_block(&self, by: &usize, bo3: &usize) -> Block {
+    pub fn get_t_block(&self, by: &usize, bo3: &usize, ymax: usize) -> Block {
         let btype = match *by {
-            MAX_BLOCK_IN_CHUNK_Y => 0,
+            y if y == ymax => 0,
             _ => self.data.blocks[bo3 + BLOCKS_IN_CHUNK_2D],
         };
         let light = match *by {
-            MAX_BLOCK_IN_CHUNK_Y => MAX_LIGHT_LEVEL,
+            y if y == ymax => MAX_LIGHT_LEVEL,
             _ => self.data.lights[bo3 + BLOCKS_IN_CHUNK_2D],
         };
 

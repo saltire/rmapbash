@@ -1,6 +1,7 @@
 use std::cmp::{min, max};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
+use std::ops::Range;
 use std::path::Path;
 
 use super::region;
@@ -17,6 +18,7 @@ pub struct World<'a> {
     pub redges: Edges<isize>,
     pub cedges: Edges<isize>,
     pub bedges: Edges<isize>,
+    pub ylimits: &'a Range<usize>,
 }
 
 pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
@@ -71,7 +73,7 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
     Ok(regions)
 }
 
-pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>)
+pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>, ylimits: &'a Range<usize>)
 -> Result<World<'a>, Error> {
     let regions = read_world_regions(worldpath, blimits)?;
     if regions.len() == 0 {
@@ -127,5 +129,6 @@ pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>)
             },
             None => cbedges,
         },
+        ylimits,
     })
 }

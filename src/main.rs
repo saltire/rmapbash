@@ -40,11 +40,18 @@ fn main() {
         .arg(Arg::with_name("b")
             .short("b")
             .long("blocks")
-            .number_of_values(4)
+            .value_names(&["N", "W", "S", "E"])
             .allow_hyphen_values(true)
             .validator(|v| v.parse::<isize>().map(|_| ())
-                .map_err(|_| "Block limits must be numbers".to_string()))
-            .help("Block limits"))
+                .map_err(|_| "Horizontal block limits must be numbers".to_string()))
+            .help("Horizontal block limits"))
+        .arg(Arg::with_name("y")
+            .short("y")
+            .long("yblocks")
+            .value_names(&["MIN", "MAX"])
+            .validator(|v| v.parse::<usize>().map(|_| ())
+                .map_err(|_| "Vertical block limits must be positive numbers".to_string()))
+            .help("Vertical block limits"))
         .get_matches();
 
     let options = options::get_options(&matches);
@@ -67,18 +74,19 @@ fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
     let outpathbuf = outdir.join("world.png");
     let outpath = outpathbuf.as_path();
 
-    println!("View:     {}", options.view);
-    println!("Lighting: {}", options.lighting);
-    println!("Limits:   {}", if let Some(blimits) = options.blimits {
+    println!("View:              {}", options.view);
+    println!("Lighting:          {}", options.lighting);
+    println!("Horizontal limits: {}", if let Some(blimits) = options.blimits {
         format!("({}, {}) - ({}, {})", blimits.w, blimits.n, blimits.e, blimits.s)
     } else {
         "none".to_string()
     });
+    println!("Vertical limits:   {} - {}", options.ylimits.start, options.ylimits.end - 1);
 
     let start = Instant::now();
 
     println!("Getting world info from world dir {}", options.inpath.display());
-    let world = world::get_world(options.inpath, &options.blimits)?;
+    let world = world::get_world(options.inpath, &options.blimits, &options.ylimits)?;
 
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types(&options.lighting);

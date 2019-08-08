@@ -16,8 +16,9 @@ Reads a saved Minecraft world from disk and outputs a rendered .PNG image.
 - Orthographic (top-down) or isometric (oblique) viewing angle.
 - Day or night lighting mode.
 - Nether and End supported; just point to the `DIM-1` or `DIM1` subdir of the save dir.
-- Render part of a world by passing two coordinates to use as a bounding box;
+- Render part of a world by passing coordinates at two corners of a bounding box;
   e.g. `-b 10 20 200 400` to render only the area between (10, 20) and (200, 400).
+- Render a vertical slice by passing min/max Y values; e.g. `-y 20 100`.
 
 ```
 USAGE:
@@ -30,7 +31,8 @@ FLAGS:
     -V, --version      Prints version information
 
 OPTIONS:
-    -b, --blocks <b> <b> <b> <b>    Block limits
+    -b, --blocks <N> <W> <S> <E>    Horizontal block limits
+    -y, --yblocks <MIN> <MAX>       Vertical block limits
 
 ARGS:
     <PATH>    Path to either a save directory or a .dat file

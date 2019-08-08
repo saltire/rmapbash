@@ -1,7 +1,9 @@
 use std::cmp::{min, max};
 use std::fmt;
+use std::ops::Range;
 use std::path::Path;
 
+use super::sizes::*;
 use super::types::*;
 
 #[derive(Debug)]
@@ -35,6 +37,7 @@ pub struct Options<'a> {
     pub view: View,
     pub lighting: Lighting,
     pub blimits: Option<Edges<isize>>,
+    pub ylimits: Range<usize>,
 }
 
 pub fn get_options<'a>(matches: &'a clap::ArgMatches) -> Options<'a> {
@@ -60,5 +63,13 @@ pub fn get_options<'a>(matches: &'a clap::ArgMatches) -> Options<'a> {
                 w: min(x1, x2),
             })
         }),
+        ylimits: match matches.values_of("y") {
+            Some(mut y) => {
+                let y1 = min(y.next().unwrap().parse::<usize>().unwrap(), MAX_BLOCK_IN_CHUNK_Y);
+                let y2 = min(y.next().unwrap().parse::<usize>().unwrap(), MAX_BLOCK_IN_CHUNK_Y);
+                min(y1, y2)..(max(y1, y2) + 1)
+            },
+            None => 0..BLOCKS_IN_CHUNK_Y,
+        },
     }
 }
