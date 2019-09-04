@@ -226,8 +226,8 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
     // Default to zero skylight and blocklight for sections that exist but don't contain those tags.
     let light_bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
 
-    while let Some(tag_name) = nbt::seek_compound_tag_names(reader, vec!["Sections", "Biomes"])? {
-        if tag_name == "Sections" {
+    while let Some((id, name)) = nbt::seek_compound_tag_names(reader, vec!["Sections", "Biomes"])? {
+        if name == "Sections" {
             let slen = nbt::read_list_length(reader)?;
             if slen == 0 {
                 return Ok(None);
@@ -296,9 +296,14 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
                     chunk.lights[so + i * 2 + 1] = (bbytes[i] & 0xf0) | (sbytes[i] >> 4);
                 }
             }
-        } else if tag_name == "Biomes" {
-            // Read biomes.
-            let cbiomes = nbt::read_u8_array(reader)?;
+        } else if name == "Biomes" {
+            // Read biomes and cast to an array of bytes.
+            let cbiomes = match nbt::read_tag_payload(reader, &id)? {
+                nbt::Tag::ByteArray(cbiomes_tag) => cbiomes_tag,
+                nbt::Tag::IntArray(cbiomes_tag) => cbiomes_tag.iter().map(|v| *v as u8).collect(),
+                _ => continue,
+            };
+
             if cbiomes.len() == BLOCKS_IN_CHUNK_2D {
                 chunk.biomes.copy_from_slice(&cbiomes);
             }

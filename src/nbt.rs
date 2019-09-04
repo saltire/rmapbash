@@ -153,7 +153,7 @@ fn skip_tag_payload<R>(reader: &mut R, id: &u8) -> Result<(), Error> where R: Re
     Ok(())
 }
 
-fn read_tag_payload<R>(reader: &mut R, id: &u8) -> Result<Tag, Error> where R: Read {
+pub fn read_tag_payload<R>(reader: &mut R, id: &u8) -> Result<Tag, Error> where R: Read {
     Ok(match id {
         1 => Tag::Byte(reader.read_u8()?),
         2 => Tag::Short(reader.read_u16::<BigEndian>()?),
@@ -204,12 +204,12 @@ fn read_tag_payload<R>(reader: &mut R, id: &u8) -> Result<Tag, Error> where R: R
             }
             Tag::LongArray(array)
         },
-        _ => return Err(Error::new(ErrorKind::InvalidData, "Invalid tag id.")),
+        _ => return Err(Error::new(ErrorKind::InvalidData, format!("Invalid tag id: {}", id))),
     })
 }
 
 pub fn seek_compound_tag_names<R>(reader: &mut R, names: Vec<&str>)
--> Result<Option<String>, Error> where R: Read {
+-> Result<Option<(u8, String)>, Error> where R: Read {
     loop {
         let (id, name) = read_tag_header(reader)?;
         // println!("Found subtag: {} {}", id, name);
@@ -218,10 +218,10 @@ pub fn seek_compound_tag_names<R>(reader: &mut R, names: Vec<&str>)
             return Ok(None);
         }
         if id > 12 {
-            return Err(Error::new(ErrorKind::InvalidData, "Invalid tag id."));
+            return Err(Error::new(ErrorKind::InvalidData, format!("Invalid tag id: {}", id)));
         }
         if names.contains(&name.as_str()) {
-            return Ok(Some(name));
+            return Ok(Some((id, name)));
         }
 
         skip_tag_payload(reader, &id)?;
@@ -229,7 +229,7 @@ pub fn seek_compound_tag_names<R>(reader: &mut R, names: Vec<&str>)
 }
 
 pub fn seek_compound_tag_name<R>(reader: &mut R, tag_name: &str)
--> Result<Option<()>, Error> where R: Read {
+-> Result<Option<(u8, String)>, Error> where R: Read {
     loop {
         let (id, name) = read_tag_header(reader)?;
         // println!("Found subtag: {} {}", id, name);
@@ -238,10 +238,10 @@ pub fn seek_compound_tag_name<R>(reader: &mut R, tag_name: &str)
             return Ok(None);
         }
         if id > 12 {
-            return Err(Error::new(ErrorKind::InvalidData, "Invalid tag id."));
+            return Err(Error::new(ErrorKind::InvalidData, format!("Invalid tag id: {}", id)));
         }
         if name == tag_name {
-            return Ok(Some(()))
+            return Ok(Some((id, name)))
         }
 
         skip_tag_payload(reader, &id)?;
@@ -283,16 +283,6 @@ pub fn read_compound_tag_names<R>(reader: &mut R, names: Vec<&str>)
     }
 
     Ok(values)
-}
-
-pub fn read_u8_array<R>(reader: &mut R) -> Result<Vec<u8>, Error> where R: Read {
-    let len = reader.read_u32::<BigEndian>()? as usize;
-    // println!("Reading {} ints", len);
-    let mut array = vec![0u8; len];
-    for i in 0..len {
-        array[i] = reader.read_u32::<BigEndian>()? as u8;
-    }
-    Ok(array)
 }
 
 pub fn read_list_length<R>(reader: &mut R) -> Result<usize, Error> where R: Read {
