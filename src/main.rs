@@ -1,6 +1,4 @@
-use std::error::Error;
 use std::path::Path;
-use std::time::Instant;
 
 use clap::{Arg, App};
 
@@ -10,6 +8,7 @@ mod color;
 mod data;
 mod image;
 mod isomap;
+mod map;
 mod nbt;
 mod options;
 mod orthomap;
@@ -17,8 +16,6 @@ mod region;
 mod sizes;
 mod types;
 mod world;
-
-use options::View;
 
 fn main() {
     let matches = App::new("rmapbash")
@@ -69,46 +66,9 @@ fn main() {
             Ok(()) => println!("Done."),
             Err(err) => eprintln!("Error reading data: {}", err),
         },
-        _ => match draw_map(&options) {
+        _ => match map::create_map(&options) {
             Ok(()) => println!("Done."),
             Err(err) => eprintln!("Error creating map: {}", err),
         },
     };
-}
-
-fn draw_map(options: &options::Options) -> Result<(), Box<Error>> {
-    println!("View:              {}", options.view);
-    println!("Lighting:          {}", options.lighting);
-    println!("Horizontal limits: {}", if let Some(blimits) = options.blimits {
-        format!("({}, {}) - ({}, {})", blimits.w, blimits.n, blimits.e, blimits.s)
-    } else {
-        "none".to_string()
-    });
-    println!("Vertical limits:   {} - {}", options.ylimits.start, options.ylimits.end - 1);
-
-    let start = Instant::now();
-
-    std::fs::create_dir_all(options.outpath.parent().unwrap())?;
-
-    println!("Getting world info from world dir {}", options.inpath.display());
-    let world = world::get_world(options.inpath, &options.blimits, &options.ylimits)?;
-
-    println!("Getting block types");
-    let blocktypes = blocktypes::get_block_types(&options.lighting);
-
-    println!("Starting block map");
-    let result = match options.view {
-        View::Isometric =>
-            isomap::draw_iso_map(&world, options.outpath, &blocktypes),
-        View::Orthographic =>
-            orthomap::draw_ortho_map(&world, options.outpath, &blocktypes),
-    };
-
-    let elapsed = start.elapsed();
-    let mins = elapsed.as_secs() / 60;
-    let secs = elapsed.as_secs() % 60;
-    let ms = elapsed.subsec_millis();
-    println!("Time elapsed: {}:{:02}.{:03}", mins, secs, ms);
-
-    result
 }

@@ -101,22 +101,39 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
--> Result<(), Box<Error>> {
-    let csize = world.cedges.size();
-    let bsize = world.bedges.size();
-    let size = Pair {
-        x: (bsize.x + bsize.z) * ISO_BLOCK_X_MARGIN,
-        z: (bsize.x + bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
-    };
+fn get_size(world: &World) -> Pair<usize> {
+    Pair {
+        x: (world.bsize.x + world.bsize.z) * ISO_BLOCK_X_MARGIN,
+        z: (world.bsize.x + world.bsize.z) * ISO_BLOCK_Y_MARGIN + ISO_CHUNK_SIDE_HEIGHT,
+    }
+}
+
+fn get_crop(world: &World, size: &Pair<usize>) -> usize {
     let cbcrop = Edges {
         n: block_pos_in_chunk(world.bedges.n, None),
         e: MAX_BLOCK_IN_CHUNK - block_pos_in_chunk(world.bedges.e, None),
         s: MAX_BLOCK_IN_CHUNK - block_pos_in_chunk(world.bedges.s, None),
         w: block_pos_in_chunk(world.bedges.w, None),
     };
-    let crop = (cbcrop.w + cbcrop.n) * ISO_BLOCK_Y_MARGIN * size.x +
-        (cbcrop.w + cbcrop.s) * ISO_BLOCK_X_MARGIN;
+    (cbcrop.w + cbcrop.n) * ISO_BLOCK_Y_MARGIN * size.x +
+        (cbcrop.w + cbcrop.s) * ISO_BLOCK_X_MARGIN
+}
+
+fn get_chunk_pixel(world: &World, arc: &Pair<isize>, c: &Pair<usize>) -> Pair<usize> {
+    let ac = Pair {
+        x: (arc.x + c.x as isize) as usize,
+        z: (arc.z + c.z as isize) as usize,
+    };
+    Pair {
+        x: (ac.x + world.csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
+        z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
+    }
+}
+
+pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
+-> Result<(), Box<Error>> {
+    let size = get_size(world);
+    let crop = get_crop(world, &size);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -136,7 +153,7 @@ pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                 println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
 
-                let arc = Pair {
+                let arc = &Pair {
                     x: r.x * CHUNKS_IN_REGION as isize - world.cedges.w,
                     z: r.z * CHUNKS_IN_REGION as isize - world.cedges.n,
                 };
@@ -157,14 +174,7 @@ pub fn draw_iso_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                                 w: block_pos_in_chunk(world.bedges.w, Some(wc.x)),
                             };
 
-                            let ac = Pair {
-                                x: (arc.x + c.x as isize) as usize,
-                                z: (arc.z + c.z as isize) as usize,
-                            };
-                            let cp = Pair {
-                                x: (ac.x + csize.z - ac.z - 1) * ISO_CHUNK_X_MARGIN,
-                                z: (ac.x + ac.z) * ISO_CHUNK_Y_MARGIN,
-                            };
+                            let cp = get_chunk_pixel(world, arc, c);
                             let co = (cp.z * size.x + cp.x) as isize - crop as isize;
 
                             draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x, &cblimits,

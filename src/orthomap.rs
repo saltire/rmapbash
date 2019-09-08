@@ -70,14 +70,29 @@ fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk
     }
 }
 
-pub fn draw_ortho_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
--> Result<(), Box<Error>> {
-    let size = world.bedges.size();
+fn get_size(world: &World) -> Pair<usize> {
+    world.bsize.clone()
+}
+
+fn get_crop(world: &World, size: &Pair<usize>) -> usize {
     let cbcrop = Pair {
         x: block_pos_in_chunk(world.bedges.w, None),
         z: block_pos_in_chunk(world.bedges.n, None),
     };
-    let crop = cbcrop.z * size.x + cbcrop.x;
+    cbcrop.z * size.x + cbcrop.x
+}
+
+fn get_chunk_pixel(_world: &World, arc: &Pair<isize>, c: &Pair<usize>) -> Pair<usize> {
+    Pair {
+        x: (arc.x + c.x as isize) as usize * BLOCKS_IN_CHUNK,
+        z: (arc.z + c.z as isize) as usize * BLOCKS_IN_CHUNK,
+    }
+}
+
+pub fn draw_ortho_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
+-> Result<(), Box<Error>> {
+    let size = get_size(world);
+    let crop = get_crop(world, &size);
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
     let mut i = 0;
@@ -97,7 +112,7 @@ pub fn draw_ortho_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                 println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
 
-                let arc = Pair {
+                let arc = &Pair {
                     x: r.x * CHUNKS_IN_REGION as isize - world.cedges.w,
                     z: r.z * CHUNKS_IN_REGION as isize - world.cedges.n,
                 };
@@ -118,12 +133,8 @@ pub fn draw_ortho_map(world: &World, outpath: &Path, blocktypes: &[BlockType])
                                 w: block_pos_in_chunk(world.bedges.w, Some(wc.x)),
                             };
 
-                            let ac = Pair {
-                                x: (arc.x + c.x as isize) as usize,
-                                z: (arc.z + c.z as isize) as usize,
-                            };
-                            let co = ((ac.z * size.x + ac.x) * BLOCKS_IN_CHUNK) as isize -
-                                crop as isize;
+                            let cp = get_chunk_pixel(world, arc, c);
+                            let co = (cp.z * size.x + cp.x) as isize - crop as isize;
 
                             draw_chunk(&mut pixels, blocktypes, &chunk, &co, &size.x, &cblimits,
                                 world.ylimits);

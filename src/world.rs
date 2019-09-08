@@ -18,6 +18,9 @@ pub struct World<'a> {
     pub redges: Edges<isize>,
     pub cedges: Edges<isize>,
     pub bedges: Edges<isize>,
+    pub rsize: Pair<usize>,
+    pub csize: Pair<usize>,
+    pub bsize: Pair<usize>,
     pub ylimits: &'a Range<usize>,
 }
 
@@ -114,21 +117,25 @@ pub fn get_world<'a>(worldpath: &'a Path, blimits: &Option<Edges<isize>>, ylimit
         s: cedges.s * BLOCKS_IN_CHUNK as isize + MAX_BLOCK_IN_CHUNK as isize,
         w: cedges.w * BLOCKS_IN_CHUNK as isize,
     };
+    let bedges = match blimits {
+        Some(blimits) => Edges {
+            n: max(cbedges.n, blimits.n),
+            e: min(cbedges.e, blimits.e),
+            s: min(cbedges.s, blimits.s),
+            w: max(cbedges.w, blimits.w),
+        },
+        None => cbedges,
+    };
 
     Ok(World {
         path: worldpath,
         regions,
         redges,
         cedges,
-        bedges: match blimits {
-            Some(blimits) => Edges {
-                n: max(cbedges.n, blimits.n),
-                e: min(cbedges.e, blimits.e),
-                s: min(cbedges.s, blimits.s),
-                w: max(cbedges.w, blimits.w),
-            },
-            None => cbedges,
-        },
+        bedges,
+        rsize: redges.size(),
+        csize: cedges.size(),
+        bsize: bedges.size(),
         ylimits,
     })
 }

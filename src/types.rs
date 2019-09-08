@@ -32,7 +32,7 @@ impl <T> Edges<T> {
     }
 }
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Pair<T> {
     pub x: T,
     pub z: T,
