@@ -4,8 +4,15 @@ beetroots,age=0,crops low
 beetroots,age=1,crops mid
 beetroots,age=2,crops high
 beetroots,age=3,crops high alternate colour
+brain_coral,,bush
+brain_coral_fan,,grass
+brain_coral_wall_fan,facing=north,vines north
+brain_coral_wall_fan,facing=east,vines east
+brain_coral_wall_fan,facing=south,vines south
+brain_coral_wall_fan,facing=west,vines west
 brick_wall,,rod upright
 brown_mushroom,,small one colour
+bubble_column,,bubbles
 campfire,,fire
 carrots,age=0,crops low
 carrots,age=1,crops low
@@ -22,10 +29,16 @@ cave_air,,empty
 dead_bush,,bush
 fern,,crops high
 fire,,fire
+glass_pane,,rod upright
 grass,,grass
 grass_block,,alternate colour bottom half
 grass_path,,alternate colour sides
 iron_bars,,reeds
+kelp,,kelp
+ladder,facing=north,ladder facing north
+ladder,facing=east,ladder facing east
+ladder,facing=south,ladder facing south
+ladder,facing=west,ladder facing west
 large_fern,half=lower,tall fern bottom
 large_fern,half=upper,tall fern top
 lily_pad,,small flat
@@ -43,6 +56,12 @@ oak_stairs,facing=north&half=top,stairs inverted north
 oak_stairs,facing=east&half=top,stairs inverted east
 oak_stairs,facing=south&half=top,stairs inverted south
 oak_stairs,facing=west&half=top,stairs inverted west
+oak_trapdoor,open=false&half=bottom,half block
+oak_trapdoor,open=false&half=top,inverted half block
+oak_trapdoor,open=true&facing=north,ladder facing north
+oak_trapdoor,open=true&facing=east,ladder facing east
+oak_trapdoor,open=true&facing=south,ladder facing south
+oak_trapdoor,open=true&facing=west,ladder facing west
 poppy,,small two colour
 rail,shape=ascending_north,rail north
 rail,shape=ascending_east,rail east
@@ -52,12 +71,34 @@ rail,,rail flat
 red_mushroom,,small two colour
 rose_bush,half=lower,flower bush bottom
 rose_bush,half=upper,flower bush top
+scaffolding,,scaffolding
+sea_pickle,,small square shadows
+sign,rotation=0,sign south
+sign,rotation=1,sign south
+sign,rotation=2,sign southwest
+sign,rotation=3,sign west
+sign,rotation=4,sign west
+sign,rotation=5,sign west
+sign,rotation=6,sign northwest
+sign,rotation=7,sign north
+sign,rotation=8,sign north
+sign,rotation=9,sign north
+sign,rotation=10,sign northeast
+sign,rotation=11,sign east
+sign,rotation=12,sign east
+sign,rotation=13,sign east
+sign,rotation=14,sign southeast
+sign,rotation=15,sign south
 sugar_cane,,reeds
 sunflower,half=lower,sunflower bottom
 sunflower,half=upper,sunflower top
 tall_grass,half=lower,tall grass bottom
 tall_grass,half=upper,tall grass top
 torch,,small two colour
+wall_sign,facing=north,wall sign north
+wall_sign,facing=east,wall sign east
+wall_sign,facing=south,wall sign south
+wall_sign,facing=west,wall sign west
 vine,north=true&east=false&south=false&west=false,vines north
 vine,north=false&east=true&south=false&west=false,vines east
 vine,north=false&east=false&south=true&west=false,vines south

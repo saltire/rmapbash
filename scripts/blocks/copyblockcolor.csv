@@ -43,7 +43,6 @@ brown_stained_glass_pane,brown_stained_glass,
 brown_wall_banner,brown_wool,
 bubble_coral_wall_fan,bubble_coral_fan,
 carved_pumpkin,pumpkin,
-chest,spruce_planks,
 cobblestone_slab,cobblestone,
 cobblestone_stairs,cobblestone,
 cobblestone_wall,cobblestone,
@@ -263,8 +262,9 @@ stripped_jungle_wood,stripped_jungle_log,
 stripped_oak_wood,stripped_oak_log,
 stripped_spruce_wood,stripped_spruce_log,
 torch,,oak_planks
+trapped_chest,chest,
 tube_coral_wall_fan,tube_coral_fan,
-wall_sign,sign,
+wall_sign,oak_planks,
 wall_torch,torch,oak_planks
 white_banner,white_wool,
 white_bed,white_wool,oak_planks
