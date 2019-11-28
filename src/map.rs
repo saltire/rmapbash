@@ -54,6 +54,8 @@ pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], opti
     };
     let mut pixels = vec![0u8; size.x * size.z * 4];
 
+    let water_blocktype = blocktypes.iter().find(|b| b.name == "minecraft:water").unwrap();
+
     let mut i = 0;
     let len = world.regions.len();
 
@@ -98,11 +100,14 @@ pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], opti
                             };
                             let co = (cp.z * size.x + cp.x) as isize - crop as isize;
 
-                            (match options.view {
-                                View::Isometric => isomap::draw_chunk,
-                                View::Orthographic => orthomap::draw_chunk,
-                            })(&mut pixels, blocktypes, &chunk, &co, &size.x, &cblimits,
-                                world.ylimits);
+                            match options.view {
+                                View::Isometric => isomap::draw_chunk(
+                                    &mut pixels, blocktypes, water_blocktype, &chunk, &co, &size.x,
+                                    &cblimits, world.ylimits),
+                                View::Orthographic => orthomap::draw_chunk(
+                                    &mut pixels, blocktypes, &chunk, &co, &size.x,
+                                    &cblimits, world.ylimits),
+                            };
                         }
                     }
                 }

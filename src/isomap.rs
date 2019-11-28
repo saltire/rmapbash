@@ -37,8 +37,9 @@ pub fn get_chunk_pixel(world: &World, arc: &Pair<isize>, c: &Pair<usize>) -> Pai
     }
 }
 
-pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::Chunk, co: &isize,
-    width: &usize, cblimits: &Edges<usize>, ylimits: &Range<usize>) {
+pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], water_blocktype: &BlockType,
+    chunk: &region::Chunk, co: &isize, width: &usize, cblimits: &Edges<usize>,
+    ylimits: &Range<usize>) {
     let blank_color = RGBA::default();
 
     for bz in (cblimits.n..(cblimits.s + 1)).rev() {
@@ -60,7 +61,7 @@ pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::C
                 }
 
                 // Create an index of colors corresponding to the digits in the block shape.
-                let mut bcolors = [&blank_color; 7];
+                let mut bcolors = [&blank_color; 8];
 
                 // Get the block above this one.
                 let tblock = chunk.get_t_block(&by, &bo3, ylimits.end - 1);
@@ -72,6 +73,8 @@ pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], chunk: &region::C
                 // TODO: are there cases where it's preferable to use the block's own light values?
                 bcolors[1] = &blocktype.colors[biome][tblock.slight][tblock.blight][1];
                 bcolors[4] = &blocktype.colors[biome][tblock.slight][tblock.blight][4];
+                // Get the base color of the water block type, in case block is waterlogged.
+                bcolors[7] = &water_blocktype.colors[biome][tblock.slight][tblock.blight][1];
 
                 // If the block is solid, use light values from neighboring blocks for side colors.
                 // Otherwise use the block's own light values.

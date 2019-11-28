@@ -9,6 +9,21 @@ from textures.textures import get_texturecolors
 
 currentdir = os.path.dirname(__file__)
 
+# Get texture/shape data.
+texturecolors = get_texturecolors()
+# texturecolors = {}
+# with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         texture, r, g, b, a = line.strip().split(',')
+#         texturecolors[texture] = r, g, b, a
+
+shapes = get_shapes()
+# shapes = {}
+# with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         shapename, shape = line.strip().split(',')
+#         shapes[shapename] = shape
+
 # Get a list of all blocks.
 with open(os.path.join(currentdir, 'blocknames.csv'), 'r') as csvfile:
     blocknames = [b.strip() for b in csvfile.readlines()]
@@ -49,28 +64,17 @@ with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, state, shapename = line.strip().split(',')
         (blocks.setdefault(block, {}).setdefault('shape', {}).setdefault('states', {})
-            [state]) = shapename
+            [state]) = shapes[shapename]
 
 with open(os.path.join(currentdir, 'copyblockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, blocktocopy = line.strip().split(',')
         blocks.setdefault(block, {})['shape'] = {'copyblock': blocktocopy}
 
-# Get texture/shape data.
-
-texturecolors = get_texturecolors()
-# texturecolors = {}
-# with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
-#     for line in csvfile.readlines():
-#         texture, r, g, b, a = line.strip().split(',')
-#         texturecolors[texture] = r, g, b, a
-
-shapes = get_shapes()
-# shapes = {}
-# with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
-#     for line in csvfile.readlines():
-#         shapename, shape = line.strip().split(',')
-#         shapes[shapename] = shape
+with open(os.path.join(currentdir, 'blocklogged.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, state = line.strip().split(',')
+        blocks.setdefault(block, {}).setdefault('shape', {})['logstate'] = state
 
 def get_block_color(block, key):
     colordata = blocks.get(block, {}).get(key, {})
@@ -83,15 +87,29 @@ def get_block_color(block, key):
         # Copy the block's primary color (for now).
         return get_block_color(colordata['copyblock'], 'color1')
 
+def add_state(state_string, new_state):
+    return '&'.join([s for s in [state_string, new_state] if s])
+
 def get_block_shapes(block):
     shapedata = blocks.get(block, {}).get('shape', {})
 
-    if 'states' in shapedata:
-        return shapedata['states']
     if 'copyblock' in shapedata:
-        return get_block_shapes(shapedata['copyblock'])
+        stateshapes = get_block_shapes(shapedata['copyblock'])
+    else:
+        stateshapes = shapedata.get('states', {'': shapes['solid shadows']}).copy()
 
-    return {'': 'solid shadows'}
+    # Add waterlogged shapes if applicable.
+    if 'logstate' in shapedata:
+        if shapedata['logstate']:
+            # If the block has a specific waterlogged state variable,
+            # add it to a copy of each of the existing states.
+            stateshapes.update({add_state(state, shapedata['logstate']): shape.replace('0', '7')
+                                for state, shape in stateshapes.items()})
+        else:
+            # Otherwise the block is always waterlogged, so replace all of the existing states.
+            stateshapes = {state: shape.replace('0', '7') for state, shape in stateshapes.items()}
+
+    return stateshapes
 
 
 # Compile final blocks.csv from all read data.
@@ -110,12 +128,12 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
         biome = blocks.get(block, {}).get('biome', '')
         stateshapes = get_block_shapes(block)
 
-        for state, shapename in stateshapes.items():
+        for state, shape in stateshapes.items():
             writer.writerow([
                 block,
                 *(color1 or ('', '', '', '')),
                 *(color2 or ('', '', '', '')),
                 biome,
                 state,
-                shapes[shapename],
+                shape,
             ])
