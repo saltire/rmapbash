@@ -262,6 +262,10 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
                                 b.name == name &&
                                 b.state.iter().all(|(k, v)| props[k] == v)
                             })
+                            .or_else(|| {
+                                println!("Unknown block type {}", name);
+                                Some(0)
+                            })
                             .unwrap() as u16);
                     }
 
