@@ -18,6 +18,7 @@ use super::sizes::*;
 use super::types::*;
 use super::world::World;
 
+#[derive(Clone, Copy)]
 pub struct Block {
     pub btype: u16,
     pub slight: usize,
@@ -30,7 +31,7 @@ pub struct ChunkData {
     pub biomes: [u8; BLOCKS_IN_CHUNK_2D],
 }
 
-static EMPTY_CHUNK: ChunkData = ChunkData {
+const EMPTY_CHUNK: ChunkData = ChunkData {
     blocks: [0u16; BLOCKS_IN_CHUNK_3D],
     lights: [0u8; BLOCKS_IN_CHUNK_3D],
     biomes: [0u8; BLOCKS_IN_CHUNK_2D],
@@ -42,6 +43,15 @@ pub struct Chunk<'a> {
 }
 
 impl<'a> Chunk<'a> {
+    pub fn get_block(&self, bo3: &usize) -> Block {
+        let light = self.data.lights[*bo3];
+        Block {
+            btype: self.data.blocks[*bo3],
+            slight: (light & 0x0f) as usize,
+            blight: ((light & 0xf0) >> 4) as usize,
+        }
+    }
+
     pub fn get_t_block(&self, by: &usize, bo3: &usize, ymax: usize) -> Block {
         let btype = match *by {
             y if y == ymax => 0,

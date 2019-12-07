@@ -9,6 +9,21 @@ from textures.textures import get_texturecolors
 
 currentdir = os.path.dirname(__file__)
 
+# Get texture/shape data.
+texturecolors = get_texturecolors()
+# texturecolors = {}
+# with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         texture, r, g, b, a = line.strip().split(',')
+#         texturecolors[texture] = r, g, b, a
+
+shapes = get_shapes()
+# shapes = {}
+# with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
+#     for line in csvfile.readlines():
+#         shapename, shape = line.strip().split(',')
+#         shapes[shapename] = shape
+
 # Get a list of all blocks.
 with open(os.path.join(currentdir, 'blocknames.csv'), 'r') as csvfile:
     blocknames = [b.strip() for b in csvfile.readlines()]
@@ -48,29 +63,18 @@ with open(os.path.join(currentdir, 'blockbiomes.csv'), 'r') as csvfile:
 with open(os.path.join(currentdir, 'blockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, state, shapename = line.strip().split(',')
-        (blocks.setdefault(block, {}).setdefault('shape', {}).setdefault('states', {})
-            [state]) = shapename
+        (blocks.setdefault(block, {}).setdefault('statedata', {}).setdefault('stateshapes', {})
+            [state]) = {'shape': shapes[shapename]}
 
 with open(os.path.join(currentdir, 'copyblockshapes.csv'), 'r') as csvfile:
     for line in csvfile.readlines():
         block, blocktocopy = line.strip().split(',')
-        blocks.setdefault(block, {})['shape'] = {'copyblock': blocktocopy}
+        blocks.setdefault(block, {})['statedata'] = {'copyblock': blocktocopy}
 
-# Get texture/shape data.
-
-texturecolors = get_texturecolors()
-# texturecolors = {}
-# with open(os.path.join(currentdir, 'textures/texturecolors.csv'), 'r') as csvfile:
-#     for line in csvfile.readlines():
-#         texture, r, g, b, a = line.strip().split(',')
-#         texturecolors[texture] = r, g, b, a
-
-shapes = get_shapes()
-# shapes = {}
-# with open(os.path.join(currentdir, 'shapes/shapes.csv'), 'r') as csvfile:
-#     for line in csvfile.readlines():
-#         shapename, shape = line.strip().split(',')
-#         shapes[shapename] = shape
+with open(os.path.join(currentdir, 'blocklogged.csv'), 'r') as csvfile:
+    for line in csvfile.readlines():
+        block, state = line.strip().split(',')
+        blocks.setdefault(block, {}).setdefault('statedata', {})['loggedstate'] = state
 
 def get_block_color(block, key):
     colordata = blocks.get(block, {}).get(key, {})
@@ -83,23 +87,47 @@ def get_block_color(block, key):
         # Copy the block's primary color (for now).
         return get_block_color(colordata['copyblock'], 'color1')
 
-def get_block_shapes(block):
-    shapedata = blocks.get(block, {}).get('shape', {})
+def add_state(state_string, new_state):
+    return '&'.join([s for s in [state_string, new_state] if s])
 
-    if 'states' in shapedata:
-        return shapedata['states']
-    if 'copyblock' in shapedata:
-        return get_block_shapes(shapedata['copyblock'])
+def get_block_states(block):
+    statedata = blocks.get(block, {}).get('statedata', {})
+    if block == 'acacia_fence':
+        print(block, 'statedata', statedata)
 
-    return {'': 'solid shadows'}
+    if 'copyblock' in statedata:
+        states = get_block_states(statedata['copyblock'])
+    else:
+        states = statedata.get('stateshapes', {'': {'shape': shapes['solid shadows']}}).copy()
+
+    if block == 'acacia_fence':
+        print(block, 'states1', states)
+
+    # Add waterlogged shapes if applicable.
+    if 'loggedstate' in statedata:
+        if statedata['loggedstate']:
+            # If the block has a specific waterlogged state variable,
+            # add it to a copy of each of the existing states.
+            states.update({add_state(state, statedata['loggedstate']):
+                           {'shape': stdata['shape'], 'waterlogged': True}
+                           for state, stdata in states.items()})
+        else:
+            # If blank, the block is always waterlogged, so replace all of the existing states.
+            states = {state: {'shape': stdata['shape'], 'waterlogged': True}
+                      for state, stdata in states.items()}
+
+    if block == 'acacia_fence':
+        print(block, 'states2', states)
+    return states
 
 
 # Compile final blocks.csv from all read data.
 with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfile:
     writer = csv.writer(csvfile)
 
-    writer.writerow(['name', 'r', 'g', 'b', 'a', 'r2', 'g2', 'b2', 'a2', 'biome', 'state', 'shape'])
-    writer.writerow(['', '', '', '', '', '', '', '', '', '', '', ''])
+    cols = ['name', 'r', 'g', 'b', 'a', 'r2', 'g2', 'b2', 'a2', 'biome', 'state', 'shape', 'waterlogged']
+    writer.writerow(cols)
+    writer.writerow(['' for _ in cols])
 
     for block in blocknames:
         if block not in blocks:
@@ -108,14 +136,15 @@ with open(os.path.join(currentdir, '../../resources/blocks.csv'), 'w') as csvfil
         color1 = get_block_color(block, 'color1')
         color2 = get_block_color(block, 'color2')
         biome = blocks.get(block, {}).get('biome', '')
-        stateshapes = get_block_shapes(block)
+        stateshapes = get_block_states(block)
 
-        for state, shapename in stateshapes.items():
+        for state, statedata in stateshapes.items():
             writer.writerow([
                 block,
                 *(color1 or ('', '', '', '')),
                 *(color2 or ('', '', '', '')),
                 biome,
                 state,
-                shapes[shapename],
+                statedata['shape'],
+                1 if statedata.get('waterlogged', False) else 0,
             ])

@@ -6,6 +6,8 @@ pub struct RGBA {
     pub a: u8,
 }
 
+pub const BLANK_RGBA: RGBA = RGBA { r: 0, g: 0, b: 0, a: 0 };
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RGB {
     pub r: u8,

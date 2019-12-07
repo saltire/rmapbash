@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 use super::biometypes;
 use super::color;
-use super::color::{RGBA, RGB};
+use super::color::{RGBA, BLANK_RGBA, RGB};
 use super::options::Lighting;
 use super::sizes::*;
 
@@ -25,6 +25,7 @@ struct BlockRow {
     biome: Option<u8>,
     state: String,
     shape: String,
+    waterlogged: Option<u8>,
 }
 
 #[derive(Deserialize)]
@@ -37,12 +38,14 @@ struct LightRow {
 }
 
 pub struct BlockType {
+    pub id: u16,
     pub name: String,
     pub colors: [[[[RGBA; 7]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE],
     pub state: HashMap<String, String>,
     pub shape: [[usize; ISO_BLOCK_WIDTH]; ISO_BLOCK_HEIGHT],
     pub solid: bool,
     pub empty: bool,
+    pub waterlogged: bool,
 }
 
 impl PartialEq for BlockType {
@@ -92,7 +95,7 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
         };
         let biome_color_type = row.biome.unwrap_or(0);
 
-        let mut blockcolors = [[[[RGBA::default(); 7]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
+        let mut blockcolors = [[[[BLANK_RGBA; 7]; LIGHT_LEVELS]; LIGHT_LEVELS]; BIOME_ARRAY_SIZE];
         for biome in &biome_types {
             // Apply biome color to primary color only.
             let biome_id = biome.id as usize;
@@ -143,12 +146,14 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
         }
 
         blocktypes.push(BlockType {
+            id: blocktypes.len() as u16,
             name: format!("minecraft:{}", row.name),
             colors: blockcolors,
-            shape: shape,
-            state: state,
+            shape,
+            state,
             solid: row.shape.find('0').is_none(),
             empty: row.shape == "" || row.shape == "0000000000000000",
+            waterlogged: row.waterlogged.unwrap_or(0) == 1,
         });
     }
 
