@@ -92,16 +92,11 @@ def add_state(state_string, new_state):
 
 def get_block_states(block):
     statedata = blocks.get(block, {}).get('statedata', {})
-    if block == 'acacia_fence':
-        print(block, 'statedata', statedata)
 
     if 'copyblock' in statedata:
         states = get_block_states(statedata['copyblock'])
     else:
         states = statedata.get('stateshapes', {'': {'shape': shapes['solid shadows']}}).copy()
-
-    if block == 'acacia_fence':
-        print(block, 'states1', states)
 
     # Add waterlogged shapes if applicable.
     if 'loggedstate' in statedata:
@@ -116,8 +111,6 @@ def get_block_states(block):
             states = {state: {'shape': stdata['shape'], 'waterlogged': True}
                       for state, stdata in states.items()}
 
-    if block == 'acacia_fence':
-        print(block, 'states2', states)
     return states
 
 
