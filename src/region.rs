@@ -328,7 +328,7 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
 }
 
 fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[BlockType])
--> Result<HashMap<Pair<usize>, ChunkData>, Box<Error>> {
+-> Result<HashMap<Pair<usize>, ChunkData>, Box<dyn std::error::Error>> {
     let mut chunks = HashMap::new();
 
     if path.exists() {
@@ -349,7 +349,7 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
 }
 
 pub fn read_region_data(world: &World, r: &Pair<isize>, blocktypes: &[BlockType])
--> Result<Option<RegionData>, Box<Error>> {
+-> Result<Option<RegionData>, Box<dyn std::error::Error>> {
     let regionpath = get_path_from_coords(world.path, &r);
     if !regionpath.exists() {
         return Ok(None);

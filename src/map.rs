@@ -11,7 +11,7 @@ use super::sizes::*;
 use super::types::*;
 use super::world;
 
-pub fn create_map(options: &Options) -> Result<(), Box<Error>> {
+pub fn create_map(options: &Options) -> Result<(), Box<dyn Error>> {
     println!("View:              {}", options.view);
     println!("Lighting:          {}", options.lighting);
     println!("Horizontal limits: {}", match options.blimits {
@@ -43,7 +43,7 @@ pub fn create_map(options: &Options) -> Result<(), Box<Error>> {
 }
 
 pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], options: &Options)
--> Result<(), Box<Error>> {
+-> Result<(), Box<dyn Error>> {
     let size = match options.view {
         View::Isometric => isomap::get_size(world),
         View::Orthographic => orthomap::get_size(world),
