@@ -23,6 +23,9 @@ birch_wall_sign,oak_wall_sign
 black_bed,white_bed
 black_carpet,white_carpet
 black_stained_glass_pane,glass_pane
+blackstone_slab,oak_slab
+blackstone_stairs,oak_stairs
+blackstone_wall,brick_wall
 blue_bed,white_bed
 blue_carpet,white_carpet
 blue_stained_glass_pane,glass_pane
@@ -39,6 +42,12 @@ cobblestone_slab,oak_slab
 cobblestone_stairs,oak_stairs
 cobblestone_wall,brick_wall
 cornflower,poppy
+crimson_fence,oak_fence
+crimson_pressure_plate,oak_pressure_plate
+crimson_sign,oak_sign
+crimson_slab,oak_slab
+crimson_stairs,oak_stairs
+crimson_trapdoor,oak_trapdoor
 cut_red_sandstone_slab,oak_slab
 cut_sandstone_slab,oak_slab
 cyan_bed,white_bed
@@ -143,6 +152,13 @@ pink_stained_glass_pane,glass_pane
 pink_tulip,poppy
 polished_andesite_slab,oak_slab
 polished_andesite_stairs,oak_stairs
+polished_blackstone_brick_slab,oak_slab
+polished_blackstone_brick_stairs,oak_stairs
+polished_blackstone_brick_wall,brick_wall
+polished_blackstone_pressure_plate,oak_pressure_plate
+polished_blackstone_slab,oak_slab
+polished_blackstone_stairs,oak_stairs
+polished_blackstone_wall,brick_wall
 polished_diorite_slab,oak_slab
 polished_diorite_stairs,oak_stairs
 polished_granite_slab,oak_slab
@@ -182,6 +198,8 @@ smooth_red_sandstone_stairs,oak_stairs
 smooth_sandstone_slab,oak_slab
 smooth_sandstone_stairs,oak_stairs
 smooth_stone_slab,oak_slab
+soul_fire,fire
+soul_torch,torch
 spruce_fence,oak_fence
 spruce_pressure_plate,oak_pressure_plate
 spruce_sapling,oak_sapling
@@ -201,6 +219,11 @@ trapped_chest,chest
 tube_coral,brain_coral
 tube_coral_fan,brain_coral_fan
 tube_coral_wall_fan,brain_coral_wall_fan
+warped_fence,oak_fence
+warped_sign,oak_sign
+warped_slab,oak_slab
+warped_stairs,oak_stairs
+warped_trapdoor,oak_trapdoor
 white_stained_glass_pane,glass_pane
 white_tulip,poppy
 wither_rose,poppy

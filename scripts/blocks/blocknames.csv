@@ -705,6 +705,7 @@ void_air
 wall_sign
 wall_torch
 warped_button
+warped_door
 warped_fence
 warped_fence_gate
 warped_fungus
