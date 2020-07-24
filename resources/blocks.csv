@@ -347,8 +347,8 @@ bubble_coral_wall_fan,160,32,159,255,,,,,,facing=south&waterlogged=true,00000200
 bubble_coral_wall_fan,160,32,159,255,,,,,,facing=west&waterlogged=true,3000030030000000,1
 cactus,85,127,43,255,,,,,,,1111223322332233,0
 cake,248,222,214,255,,,,,,,1111223322332233,0
-campfire,239,205,86,255,201,108,3,255,,,0040401014144111,0
-campfire,239,205,86,255,201,108,3,255,,waterlogged=true,0040401014144111,1
+campfire,239,205,86,255,239,205,86,255,,,0040401014144111,0
+campfire,239,205,86,255,239,205,86,255,,waterlogged=true,0040401014144111,1
 carrots,85,171,45,255,227,138,29,255,,age=0,0000000000000210,0
 carrots,85,171,45,255,227,138,29,255,,age=1,0000000000000210,0
 carrots,85,171,45,255,227,138,29,255,,age=2,0000000000000210,0
@@ -414,7 +414,7 @@ conduit,159,139,113,255,,,,,,,1111223322332233,0
 conduit,159,139,113,255,,,,,,waterlogged=true,1111223322332233,1
 cornflower,114,143,241,255,91,156,81,255,,,0000000000100040,0
 cracked_nether_bricks,40,20,23,255,,,,,,,1111223322332233,0
-cracked_polished_blackstone_bricks,,,,,,,,,,,1111223322332233,0
+cracked_polished_blackstone_bricks,43,37,43,255,,,,,,,1111223322332233,0
 cracked_stone_bricks,118,117,118,255,,,,,,,1111223322332233,0
 crafting_table,119,73,42,255,,,,,,,1111223322332233,0
 creeper_head,,,,,,,,,,,1111223322332233,0
@@ -497,6 +497,7 @@ crimson_trapdoor,103,50,72,255,,,,,,open=true&facing=north&waterlogged=true,0000
 crimson_trapdoor,103,50,72,255,,,,,,open=true&facing=east&waterlogged=true,3300110033000000,1
 crimson_trapdoor,103,50,72,255,,,,,,open=true&facing=south&waterlogged=true,0011002200110000,1
 crimson_trapdoor,103,50,72,255,,,,,,open=true&facing=west&waterlogged=true,0000003300110033,1
+crimson_wall_sign,101,48,70,255,,,,,,,1111223322332233,0
 crying_obsidian,32,10,60,255,,,,,,,1111223322332233,0
 cut_red_sandstone,189,101,31,255,,,,,,,1111223322332233,0
 cut_red_sandstone_slab,189,101,31,255,,,,,,type=bottom,0000000011112233,0
@@ -1783,12 +1784,13 @@ smooth_stone_slab,158,158,158,255,,,,,,type=top&waterlogged=true,111122330000000
 smooth_stone_slab,158,158,158,255,,,,,,type=double&waterlogged=true,1111223322332233,1
 snow,249,254,254,255,,,,,,,1111223322332233,0
 snow_block,249,254,254,255,,,,,,,1111223322332233,0
-soul_campfire,,,,,,,,,,,1111223322332233,0
-soul_fire,,,,,,,,,,,0040401014144111,0
+soul_campfire,78,241,246,255,78,241,246,255,,,1111223322332233,0
+soul_fire,78,241,246,255,2,198,204,255,,,0040401014144111,0
 soul_lantern,71,99,114,255,,,,,,,1111223322332233,0
 soul_sand,81,62,50,255,,,,,,,1111223322332233,0
 soul_soil,75,57,46,255,,,,,,,1111223322332233,0
-soul_torch,,,,,162,130,78,255,,,0000000000100040,0
+soul_torch,50,232,238,255,162,130,78,255,,,0000000000100040,0
+soul_wall_torch,50,232,238,255,162,130,78,255,,,1111223322332233,0
 spawner,36,46,62,255,,,,,,,1111223322332233,0
 sponge,195,192,74,255,,,,,,,1111223322332233,0
 spruce_button,114,84,48,255,,,,,,,1111223322332233,0
@@ -2082,6 +2084,7 @@ warped_trapdoor,47,119,111,255,,,,,,open=true&facing=north&waterlogged=true,0000
 warped_trapdoor,47,119,111,255,,,,,,open=true&facing=east&waterlogged=true,3300110033000000,1
 warped_trapdoor,47,119,111,255,,,,,,open=true&facing=south&waterlogged=true,0011002200110000,1
 warped_trapdoor,47,119,111,255,,,,,,open=true&facing=west&waterlogged=true,0000003300110033,1
+warped_wall_sign,43,104,99,255,,,,,,,1111223322332233,0
 warped_wart_block,22,119,121,255,,,,,,,1111223322332233,0
 water,41,93,254,102,,,,,3,,1111223322332233,0
 weeping_vines,104,1,0,255,,,,,,,1111223322332233,0

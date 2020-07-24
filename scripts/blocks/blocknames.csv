@@ -168,6 +168,7 @@ crimson_slab
 crimson_stairs
 crimson_stem
 crimson_trapdoor
+crimson_wall_sign
 crying_obsidian
 cut_red_sandstone
 cut_red_sandstone_slab
@@ -636,6 +637,7 @@ soul_lantern
 soul_sand
 soul_soil
 soul_torch
+soul_wall_torch
 spawner
 sponge
 spruce_button
@@ -717,6 +719,7 @@ warped_slab
 warped_stairs
 warped_stem
 warped_trapdoor
+warped_wall_sign
 warped_wart_block
 water
 weeping_vines
