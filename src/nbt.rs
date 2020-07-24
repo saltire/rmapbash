@@ -36,6 +36,13 @@ impl Tag {
         }
     }
 
+    pub fn to_u32(&self) -> Result<&u32, Error> {
+        match self {
+            Tag::Int(int) => Ok(int),
+            _ => Err(Error::new(ErrorKind::InvalidData, "Invalid int tag"))
+        }
+    }
+
     pub fn to_str(&self) -> Result<&str, Error> {
         match self {
             Tag::String(string) => Ok(string),

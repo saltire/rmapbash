@@ -18,6 +18,9 @@ use super::sizes::*;
 use super::types::*;
 use super::world::World;
 
+// Data version number
+const V_1_16: u32 = 2566;
+
 #[derive(Clone, Copy)]
 pub struct Block {
     pub btype: u16,
@@ -169,7 +172,7 @@ impl RegionData {
     }
 }
 
-fn get_path_from_coords<'a>(worldpath: &Path, r: &Pair<isize>) -> PathBuf {
+fn get_path_from_coords(worldpath: &Path, r: &Pair<isize>) -> PathBuf {
     worldpath.join("region").join(format!("r.{}.{}.mca", r.x, r.z))
 }
 
@@ -191,7 +194,7 @@ pub fn read_region_chunk_coords(path: &Path, rclimits: &Option<Edges<usize>>)
 
     for cz in climits.n..(climits.s + 1) {
         for cx in climits.w..(climits.e + 1) {
-            if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
+            if let Some((mut reader, _)) = get_region_chunk_reader(&mut file, cx, cz)? {
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_some() &&
                     nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_some() &&
                     nbt::read_list_length(&mut reader)? > 0 {
@@ -205,24 +208,37 @@ pub fn read_region_chunk_coords(path: &Path, rclimits: &Option<Edges<usize>>)
 }
 
 fn get_region_chunk_reader(file: &mut File, cx: usize, cz: usize)
--> Result<Option<ZlibDecoder<&mut File>>, Error> {
+-> Result<Option<(ZlibDecoder<&mut File>, u32)>, Error> {
     let co = (cz * CHUNKS_IN_REGION + cx) * 4;
     file.seek(SeekFrom::Start(co as u64))?;
 
     let offset = (file.read_u32::<BigEndian>()? >> 8) as usize * SECTOR_SIZE;
     Ok(if offset == 0 { None } else {
         file.seek(SeekFrom::Start(offset as u64))?;
-        let size = file.read_u32::<BigEndian>()? as usize;
-        file.seek(SeekFrom::Current(1))?;
+        let size = file.read_u32::<BigEndian>()? as usize; // Size of compressed chunk
+        file.seek(SeekFrom::Current(1))?; // Skip compression type
 
+        let version = get_chunk_version(file, &size)?;
+        file.seek(SeekFrom::Start(offset as u64 + 5))?; // Skip size and compression type
+
+        // Create a new reader to start from the beginning,
+        // since version and level data could be in any order in the chunk.
         let mut reader = ZlibDecoder::new_with_buf(file, vec![0u8; size - 1]);
         nbt::read_tag_header(&mut reader)?;
 
-        Some(reader)
+        Some((reader, version))
     })
 }
 
-pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
+fn get_chunk_version(file: &mut File, size: &usize) -> Result<u32, Error> {
+    let mut reader = ZlibDecoder::new_with_buf(file, vec![0u8; size - 1]);
+    nbt::read_tag_header(&mut reader)?;
+    let (id, _) = nbt::seek_compound_tag_name(&mut reader, "DataVersion")?.unwrap();
+    let version = nbt::read_tag_payload(&mut reader, &id)?;
+    Ok(*version.to_u32()?)
+}
+
+pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockType])
 -> Result<Option<ChunkData>, Error> where R: Read {
     if nbt::seek_compound_tag_name(reader, "Level")?.is_none() {
         return Ok(None);
@@ -296,16 +312,15 @@ pub fn read_region_chunk<R>(reader: &mut R, blocktypes: &[BlockType])
                     }
                     let mut br = BitReader::new(&bytes);
 
-                    for i in (0..long_count).rev() {
-                        // Skip unused bits from the top of the i64 if there is a remainder.
-                        // NOTE: this behaviour changed in 1.16; will need to support the previous
-                        // format as well if we want to support earlier versions.
-                        br.skip(remainder).unwrap();
-
-                        for j in (0..states_per_long).rev() {
-                            let x = br.read_u16(bits).unwrap() as usize;
-                            chunk.blocks[so + (i * states_per_long) + j] = pblocks[x];
+                    for i in 0..BLOCKS_IN_SECTION_3D {
+                        // Version 1.16+ only
+                        // Skip unused bits from the top of each i64, if there is a remainder.
+                        if version >= V_1_16 && remainder > 0 && i % states_per_long == 0 {
+                            br.skip(remainder).unwrap();
                         }
+
+                        let x = br.read_u16(bits).unwrap() as usize;
+                        chunk.blocks[so + BLOCKS_IN_SECTION_3D - i - 1] = pblocks[x];
                     }
                 }
 
@@ -348,8 +363,8 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
 
         for cz in rclimits.n..(rclimits.s + 1) {
             for cx in rclimits.w..(rclimits.e + 1) {
-                if let Some(mut reader) = get_region_chunk_reader(&mut file, cx, cz)? {
-                    if let Some(chunk) = read_region_chunk(&mut reader, blocktypes)? {
+                if let Some((mut reader, version)) = get_region_chunk_reader(&mut file, cx, cz)? {
+                    if let Some(chunk) = read_region_chunk(&mut reader, version, blocktypes)? {
                         chunks.insert(Pair { x: cx, z: cz }, chunk);
                     }
                 }
