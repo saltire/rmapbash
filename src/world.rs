@@ -4,6 +4,8 @@ use std::io::{Error, ErrorKind};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+
 use super::region;
 use super::sizes::*;
 use super::types::*;
@@ -59,11 +61,19 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
                         })
                     } else { None }))))
         .collect();
-    println!("Found {} regions.", region_files.len());
 
     let mut regions = HashMap::new();
 
+    let bar = ProgressBar::with_draw_target(region_files.len() as u64,
+        ProgressDrawTarget::stdout_nohz())
+        .with_style(ProgressStyle::default_bar()
+            .template("{wide_bar}\nRegion {msg} ({pos}/{len})"));
+
     for RegionFile { coords: r, path } in region_files {
+        let coords = format!("{}, {}", r.x, r.z);
+        bar.set_message(&coords);
+        bar.inc(1);
+
         // If block limits were passed, find the chunk limits within the region.
         let rclimits = blimits.and_then(|blimits| Some(Edges {
             n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
@@ -83,6 +93,8 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
             });
         }
     }
+
+    bar.finish_and_clear();
 
     Ok(regions)
 }

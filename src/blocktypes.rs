@@ -3,6 +3,8 @@ use std::path::Path;
 
 use csv::Reader;
 
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+
 use serde::Deserialize;
 
 use super::biometypes;
@@ -80,7 +82,13 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
     let blockpath = Path::new("./resources/blocks.csv");
     let mut blockreader = Reader::from_path(blockpath).unwrap();
     let blockrows: Vec<BlockRow> = blockreader.deserialize().map(|res| res.unwrap()).collect();
+
+    let bar = ProgressBar::with_draw_target(blockrows.len() as u64, ProgressDrawTarget::stdout())
+        .with_style(ProgressStyle::default_bar().template("{wide_bar}"));
+
     for row in &blockrows {
+        bar.inc(1);
+
         let block_color = RGBA {
             r: row.r.unwrap_or(0),
             g: row.g.unwrap_or(0),
@@ -156,6 +164,8 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
             waterlogged: row.waterlogged.unwrap_or(0) == 1,
         });
     }
+
+    bar.finish_and_clear();
 
     blocktypes
 }

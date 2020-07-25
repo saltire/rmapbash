@@ -10,6 +10,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use flate2::read::ZlibDecoder;
 
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+
 use regex::Regex;
 
 use super::blocktypes::BlockType;
@@ -191,9 +193,16 @@ pub fn read_region_chunk_coords(path: &Path, rclimits: &Option<Edges<usize>>)
     let mut chunks = vec![];
 
     let climits = rclimits.unwrap_or_else(|| Edges::<usize>::full(CHUNKS_IN_REGION));
+    let size = climits.size();
+
+    let bar = ProgressBar::with_draw_target((size.x * size.z) as u64, ProgressDrawTarget::stdout())
+        .with_style(ProgressStyle::default_bar()
+            .template("{wide_bar}")
+            .progress_chars("▪■ "));
 
     for cz in climits.n..(climits.s + 1) {
         for cx in climits.w..(climits.e + 1) {
+            bar.inc(1);
             if let Some((mut reader, _)) = get_region_chunk_reader(&mut file, cx, cz)? {
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_some() &&
                     nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_some() &&
@@ -203,6 +212,8 @@ pub fn read_region_chunk_coords(path: &Path, rclimits: &Option<Edges<usize>>)
             }
         }
     }
+
+    bar.finish_and_clear();
 
     Ok(chunks)
 }
