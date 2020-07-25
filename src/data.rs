@@ -5,7 +5,7 @@ use std::result::Result;
 
 use flate2::read::GzDecoder;
 
-use ::nbt::Blob;
+use nbt::Blob;
 
 pub fn read_dat_file(path: &Path) -> Result<(), Error> {
     let file = File::open(path)?;
