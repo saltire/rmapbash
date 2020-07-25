@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::time::Instant;
 
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+
 use super::blocktypes;
 use super::image;
 use super::isomap;
@@ -30,7 +32,7 @@ pub fn create_map(options: &Options) -> Result<(), Box<dyn Error>> {
     println!("Getting block types");
     let blocktypes = blocktypes::get_block_types(&options.lighting);
 
-    println!("Starting block map");
+    println!("Drawing block map");
     let result = draw_map(&world, &blocktypes, options);
 
     let elapsed = start.elapsed();
@@ -56,8 +58,11 @@ pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], opti
 
     let water_blocktype = blocktypes.iter().find(|b| b.name == "minecraft:water").unwrap();
 
-    let mut i = 0;
-    let len = world.regions.len();
+    let bar = ProgressBar::with_draw_target(world.regions.len() as u64,
+        ProgressDrawTarget::stdout_nohz())
+        .with_style(ProgressStyle::default_bar()
+            .template("{wide_bar}\n{msg} ({pos}/{len})")
+            .progress_chars("▪■ "));
 
     for rz in (world.redges.n..world.redges.s + 1).rev() {
         for rx in (world.redges.w..world.redges.e + 1).rev() {
@@ -66,20 +71,30 @@ pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], opti
                 continue;
             }
 
-            i += 1;
-            println!("Reading block data for region {}, {} ({}/{})", r.x, r.z, i, len);
+            let msg = format!("Reading block data for region {}, {}", r.x, r.z);
+            bar.set_message(&msg);
+            bar.inc(1);
+
             if let Some(reg) = region::read_region_data(&world, r, blocktypes)? {
                 let chunk_count = reg.chunks.len();
-                println!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
+                let msg = format!("Drawing block map for region {}, {} ({} chunk{})", r.x, r.z,
                     chunk_count, if chunk_count == 1 { "" } else { "s" });
+                bar.set_message(&msg);
 
                 let arc = &Pair {
                     x: r.x * CHUNKS_IN_REGION as isize - world.cedges.w,
                     z: r.z * CHUNKS_IN_REGION as isize - world.cedges.n,
                 };
 
+                let cbar = ProgressBar::with_draw_target(CHUNKS_IN_REGION_2D as u64,
+                    ProgressDrawTarget::stdout())
+                    .with_style(ProgressStyle::default_bar().template("{wide_bar}")
+                        .progress_chars("▪■ "));
+
                 for cz in (0..CHUNKS_IN_REGION).rev() {
                     for cx in (0..CHUNKS_IN_REGION).rev() {
+                        cbar.inc(1);
+
                         let c = &Pair { x: cx, z: cz };
                         if let Some(chunk) = reg.get_chunk(c) {
                             // println!("Drawing chunk {}, {}", c.x, c.z);
@@ -111,13 +126,15 @@ pub fn draw_map(world: &world::World, blocktypes: &[blocktypes::BlockType], opti
                         }
                     }
                 }
-            } else {
-                println!("No data in region.");
+
+                cbar.finish_and_clear();
             }
         }
     }
 
     image::draw_block_map(&pixels, size, options.outpath, true)?;
+
+    bar.finish_and_clear();
 
     Ok(())
 }

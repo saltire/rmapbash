@@ -67,11 +67,12 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
     let bar = ProgressBar::with_draw_target(region_files.len() as u64,
         ProgressDrawTarget::stdout_nohz())
         .with_style(ProgressStyle::default_bar()
-            .template("{wide_bar}\nRegion {msg} ({pos}/{len})"));
+            .template("{wide_bar}\n{msg} ({pos}/{len})")
+            .progress_chars("▪■ "));
 
     for RegionFile { coords: r, path } in region_files {
-        let coords = format!("{}, {}", r.x, r.z);
-        bar.set_message(&coords);
+        let msg = format!("Reading chunk list for region {}, {}", r.x, r.z);
+        bar.set_message(&msg);
         bar.inc(1);
 
         // If block limits were passed, find the chunk limits within the region.

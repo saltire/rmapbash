@@ -193,16 +193,15 @@ pub fn read_region_chunk_coords(path: &Path, rclimits: &Option<Edges<usize>>)
     let mut chunks = vec![];
 
     let climits = rclimits.unwrap_or_else(|| Edges::<usize>::full(CHUNKS_IN_REGION));
-    let size = climits.size();
 
+    let size = climits.size();
     let bar = ProgressBar::with_draw_target((size.x * size.z) as u64, ProgressDrawTarget::stdout())
-        .with_style(ProgressStyle::default_bar()
-            .template("{wide_bar}")
-            .progress_chars("▪■ "));
+        .with_style(ProgressStyle::default_bar().template("{wide_bar}").progress_chars("▪■ "));
 
     for cz in climits.n..(climits.s + 1) {
         for cx in climits.w..(climits.e + 1) {
             bar.inc(1);
+
             if let Some((mut reader, _)) = get_region_chunk_reader(&mut file, cx, cz)? {
                 if nbt::seek_compound_tag_name(&mut reader, "Level")?.is_some() &&
                     nbt::seek_compound_tag_name(&mut reader, "Sections")?.is_some() &&
@@ -368,12 +367,19 @@ pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockTyp
 fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[BlockType])
 -> Result<HashMap<Pair<usize>, ChunkData>, Box<dyn std::error::Error>> {
     let mut chunks = HashMap::new();
+    let size = rclimits.size();
 
     if path.exists() {
         let mut file = File::open(path)?;
 
+        let bar = ProgressBar::with_draw_target((size.x * size.z) as u64,
+            ProgressDrawTarget::stdout())
+            .with_style(ProgressStyle::default_bar().template("{wide_bar}").progress_chars("▪■ "));
+
         for cz in rclimits.n..(rclimits.s + 1) {
             for cx in rclimits.w..(rclimits.e + 1) {
+                bar.inc(1);
+
                 if let Some((mut reader, version)) = get_region_chunk_reader(&mut file, cx, cz)? {
                     if let Some(chunk) = read_region_chunk(&mut reader, version, blocktypes)? {
                         chunks.insert(Pair { x: cx, z: cz }, chunk);
@@ -381,6 +387,8 @@ fn read_region_chunk_data(path: &Path, rclimits: &Edges<usize>, blocktypes: &[Bl
                 }
             }
         }
+
+        bar.finish_and_clear();
     }
 
     Ok(chunks)

@@ -84,7 +84,7 @@ pub fn get_block_types(lighting: &Lighting) -> Vec<BlockType> {
     let blockrows: Vec<BlockRow> = blockreader.deserialize().map(|res| res.unwrap()).collect();
 
     let bar = ProgressBar::with_draw_target(blockrows.len() as u64, ProgressDrawTarget::stdout())
-        .with_style(ProgressStyle::default_bar().template("{wide_bar}"));
+        .with_style(ProgressStyle::default_bar().template("{wide_bar}").progress_chars("▪■ "));
 
     for row in &blockrows {
         bar.inc(1);
