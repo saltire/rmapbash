@@ -2,11 +2,16 @@ use std::cmp::{min, max};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::ops::Range;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::region;
 use super::sizes::*;
 use super::types::*;
+
+struct RegionFile {
+    pub path: PathBuf,
+    pub coords: Pair<isize>,
+}
 
 pub struct Region {
     pub cedges: Edges<usize>,
@@ -43,33 +48,39 @@ pub fn read_world_regions(path: &Path, blimits: &Option<Edges<isize>>)
         w: block_to_region(blimits.w),
     }));
 
+    let region_files: Vec<RegionFile> = std::fs::read_dir(region_path)?
+        .filter_map(|dir_entry| dir_entry.ok()
+            .and_then(|entry| entry.file_name().to_str()
+                .and_then(|filename| region::get_coords_from_path(filename)
+                    .and_then(|r| if rlimits.is_none() || rlimits.unwrap().contains(&r) {
+                        Some(RegionFile {
+                            path: entry.path(),
+                            coords: r,
+                        })
+                    } else { None }))))
+        .collect();
+    println!("Found {} regions.", region_files.len());
+
     let mut regions = HashMap::new();
-    for dir_entry in std::fs::read_dir(region_path)? {
-        let entry = dir_entry?;
-        if let Some(filename) = entry.file_name().to_str() {
-            if let Some(r) = region::get_coords_from_path(filename) {
-                if rlimits.is_none() || rlimits.unwrap().contains(&r) {
-                    // If block limits were passed, find the chunk limits within the region.
-                    let rclimits = blimits.and_then(|blimits| Some(Edges {
-                        n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
-                        e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
-                        s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
-                        w: chunk_pos_in_region(block_to_chunk(blimits.w), Some(r.x)),
-                    }));
-                    let chunklist = region::read_region_chunk_coords(
-                        entry.path().as_path(), &rclimits)?;
-                    if chunklist.len() > 0 {
-                        regions.insert(r, Region {
-                            cedges: Edges {
-                                n: chunklist.iter().map(|c| c.z).min().unwrap(),
-                                e: chunklist.iter().map(|c| c.x).max().unwrap(),
-                                s: chunklist.iter().map(|c| c.z).max().unwrap(),
-                                w: chunklist.iter().map(|c| c.x).min().unwrap(),
-                            },
-                        });
-                    }
-                }
-            }
+
+    for RegionFile { coords: r, path } in region_files {
+        // If block limits were passed, find the chunk limits within the region.
+        let rclimits = blimits.and_then(|blimits| Some(Edges {
+            n: chunk_pos_in_region(block_to_chunk(blimits.n), Some(r.z)),
+            e: chunk_pos_in_region(block_to_chunk(blimits.e), Some(r.x)),
+            s: chunk_pos_in_region(block_to_chunk(blimits.s), Some(r.z)),
+            w: chunk_pos_in_region(block_to_chunk(blimits.w), Some(r.x)),
+        }));
+        let chunklist = region::read_region_chunk_coords(path.as_path(), &rclimits)?;
+        if chunklist.len() > 0 {
+            regions.insert(r, Region {
+                cedges: Edges {
+                    n: chunklist.iter().map(|c| c.z).min().unwrap(),
+                    e: chunklist.iter().map(|c| c.x).max().unwrap(),
+                    s: chunklist.iter().map(|c| c.z).max().unwrap(),
+                    w: chunklist.iter().map(|c| c.x).min().unwrap(),
+                },
+            });
         }
     }
 
