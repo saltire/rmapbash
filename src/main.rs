@@ -45,7 +45,7 @@ fn main() {
         .arg(Arg::with_name("b")
             .short("b")
             .long("blocks")
-            .value_names(&["N", "W", "S", "E"])
+            .value_names(&["W", "N", "E", "S"])
             .allow_hyphen_values(true)
             .validator(|v| v.parse::<isize>().map(|_| ())
                 .map_err(|_| "Horizontal block limits must be numbers".to_string()))

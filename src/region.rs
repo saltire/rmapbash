@@ -308,9 +308,10 @@ pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockTyp
                     // BlockStates is an array of i64 representing 4096 blocks;
                     // check the array length to determine the # of bits per block state.
                     let long_count = states_longs.len();
-                    let bits = ((long_count * 64) / 4096) as u8;
+                    let bits = ((long_count * 64) / BLOCKS_IN_SECTION_3D) as u8;
                     let states_per_long = (64 / bits) as usize;
-                    let remainder = (64 % bits) as u64;
+                    let bit_remainder = (64 % bits) as u64;
+                    let state_remainder = long_count * states_per_long % BLOCKS_IN_SECTION_3D;
 
                     // Convert the states array (i64) to bytes (u8) and input into BitReader.
                     let mut bytes = vec![0u8; long_count * 8];
@@ -322,15 +323,23 @@ pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockTyp
                     }
                     let mut br = BitReader::new(&bytes);
 
+                    // Version 1.16+ only
+                    // Skip unused states from the top of the first i64, if there is a remainder.
+                    if version >= V_1_16 && state_remainder > 0 {
+                        br.skip(bit_remainder).unwrap();
+                        br.skip(state_remainder as u64 * bits as u64).unwrap();
+                    }
+
                     for i in 0..BLOCKS_IN_SECTION_3D {
                         // Version 1.16+ only
                         // Skip unused bits from the top of each i64, if there is a remainder.
-                        if version >= V_1_16 && remainder > 0 && i % states_per_long == 0 {
-                            br.skip(remainder).unwrap();
+                        if version >= V_1_16 && bit_remainder > 0 &&
+                            (i + state_remainder) % states_per_long == 0 {
+                            br.skip(bit_remainder).unwrap();
                         }
 
-                        let x = br.read_u16(bits).unwrap() as usize;
-                        chunk.blocks[so + BLOCKS_IN_SECTION_3D - i - 1] = pblocks[x];
+                        let b = br.read_u16(bits).unwrap() as usize;
+                        chunk.blocks[so + BLOCKS_IN_SECTION_3D - i - 1] = pblocks[b];
                     }
                 }
 
