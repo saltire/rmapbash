@@ -41,14 +41,15 @@ pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], water_blocktype: 
     chunk: &Chunk, co: &isize, width: &usize, cblimits: &Edges<usize>,
     ylimits: &Range<usize>) {
     for bz in (cblimits.n..(cblimits.s + 1)).rev() {
+        let biz = bz / BLOCKS_IN_BIOME;
+
         for bx in (cblimits.w..(cblimits.e + 1)).rev() {
             let bo2 = bz * BLOCKS_IN_CHUNK + bx;
+            let bio2 = biz * BIOMES_IN_CHUNK + bx / BLOCKS_IN_BIOME;
 
             let bpx = (ISO_CHUNK_X_MARGIN as isize +
                 (bx as isize - bz as isize - 1) * ISO_BLOCK_X_MARGIN as isize) as usize;
             let bpy2 = (bx + bz) * ISO_BLOCK_Y_MARGIN;
-
-            let biome = chunk.data.biomes[bo2] as usize;
 
             for by in ylimits.clone().rev() {
                 let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
@@ -57,6 +58,9 @@ pub fn draw_chunk(pixels: &mut [u8], blocktypes: &[BlockType], water_blocktype: 
                 if blocktype.empty {
                     continue;
                 }
+
+                let bio3 = by / BLOCKS_IN_BIOME * BIOMES_IN_CHUNK_2D + bio2;
+                let biome = chunk.data.biomes[bio3] as usize;
 
                 let nblocks = [
                     Some(chunk.get_t_block(&by, &bo3, ylimits.end - 1)),

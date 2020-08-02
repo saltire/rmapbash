@@ -47,7 +47,7 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
     let mut color = color::RGBA { r: 0, g: 0, b: 0, a: 0 };
 
     let bo2 = bz * BLOCKS_IN_CHUNK + bx;
-    let biome = chunk.data.biomes[bo2] as usize;
+    let bio2 = bz / BLOCKS_IN_BIOME * BIOMES_IN_CHUNK + bx / BLOCKS_IN_BIOME;
 
     for by in ylimits.clone().rev() {
         let bo3 = by * BLOCKS_IN_CHUNK_2D + bo2;
@@ -56,6 +56,9 @@ fn get_block_color(bx: usize, bz: usize, blocktypes: &[BlockType], chunk: &regio
         if blocktype.empty {
             continue;
         }
+
+        let bio3 = by / BLOCKS_IN_BIOME * BIOMES_IN_CHUNK_2D + bio2;
+        let biome = chunk.data.biomes[bio3] as usize;
 
         let tblock = chunk.get_t_block(&by, &bo3, ylimits.end - 1);
         let nblocks = Edges {

@@ -33,13 +33,13 @@ pub struct Block {
 pub struct ChunkData {
     pub blocks: [u16; BLOCKS_IN_CHUNK_3D],
     pub lights: [u8; BLOCKS_IN_CHUNK_3D],
-    pub biomes: [u8; BLOCKS_IN_CHUNK_2D],
+    pub biomes: [u8; BIOMES_IN_CHUNK_3D],
 }
 
 const EMPTY_CHUNK: ChunkData = ChunkData {
     blocks: [0u16; BLOCKS_IN_CHUNK_3D],
     lights: [0u8; BLOCKS_IN_CHUNK_3D],
-    biomes: [0u8; BLOCKS_IN_CHUNK_2D],
+    biomes: [0u8; BIOMES_IN_CHUNK_3D],
 };
 
 pub struct Chunk<'a> {
@@ -257,7 +257,7 @@ pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockTyp
     let mut chunk = ChunkData {
         blocks: [0u16; BLOCKS_IN_CHUNK_3D],
         lights: [0x0fu8; BLOCKS_IN_CHUNK_3D], // Default to full skylight and zero blocklight.
-        biomes: [0u8; BLOCKS_IN_CHUNK_2D],
+        biomes: [0u8; BIOMES_IN_CHUNK_3D],
     };
     // Default to zero skylight and blocklight for sections that exist but don't contain those tags.
     let light_bytes_default = vec![0u8; BLOCKS_IN_SECTION_3D / 2];
@@ -364,7 +364,7 @@ pub fn read_region_chunk<R>(reader: &mut R, version: u32, blocktypes: &[BlockTyp
                 _ => continue,
             };
 
-            if cbiomes.len() == BLOCKS_IN_CHUNK_2D {
+            if cbiomes.len() == BIOMES_IN_CHUNK_3D {
                 chunk.biomes.copy_from_slice(&cbiomes);
             }
         }

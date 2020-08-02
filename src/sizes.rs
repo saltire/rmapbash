@@ -20,6 +20,13 @@ pub const MAX_CHUNK_IN_REGION: usize = CHUNKS_IN_REGION - 1; // 31
 
 pub const SECTOR_SIZE: usize = 4096;
 
+// Biomes are stored as 4x4x4 block volumes.
+pub const BLOCKS_IN_BIOME: usize = 4;
+pub const BIOMES_IN_CHUNK: usize = BLOCKS_IN_CHUNK / BLOCKS_IN_BIOME; // 4
+pub const BIOMES_IN_CHUNK_2D: usize = BIOMES_IN_CHUNK * BIOMES_IN_CHUNK; // 16
+pub const BIOMES_IN_CHUNK_Y: usize = BLOCKS_IN_CHUNK_Y / BLOCKS_IN_BIOME; // 64
+pub const BIOMES_IN_CHUNK_3D: usize = BIOMES_IN_CHUNK_2D * BIOMES_IN_CHUNK_Y; // 1024
+
 
 // pixel dimensions for isometric rendering
 
